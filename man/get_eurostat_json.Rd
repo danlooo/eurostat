@@ -39,11 +39,11 @@ Eurostat order. If \code{FALSE} they are returned as strings.}
 \item{...}{
   Arguments passed on to \code{\link[httr2:req_proxy]{httr2::req_proxy}}
   \describe{
-    \item{\code{req}}{A \link[httr2]{request}.}
+    \item{\code{req}}{A httr2 \link[httr2]{request} object.}
     \item{\code{url,port}}{Location of proxy.}
     \item{\code{username,password}}{Login details for proxy, if needed.}
     \item{\code{auth}}{Type of HTTP authentication to use. Should be one of the
-following: \code{basic}, digest, digest_ie, gssnegotiate, ntlm, any.}
+following: \code{basic}, \code{digest}, \code{digest_ie}, \code{gssnegotiate}, \code{ntlm}, \code{any}.}
   }}
 }
 \value{
