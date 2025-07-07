@@ -1,0 +1,169 @@
+#' Download Eurostat Data from API Link (robust, no list-columns, async-aware)
+#'
+#' Supports TSV, SDMX-CSV, SDMX-ML, JSON-stat, and Spreadsheet (.xlsx) formats.
+#' Always returns a tibble where possible.
+#'
+#' @param link Eurostat "Copy API link" URL or Data Browser download link
+#' @param destfile Optional file path for saving raw files (only for Excel)
+#' @return Tibble for all supported formats
+#' @export
+get_eurostat_link <- function(link, destfile = NULL) {
+  if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")
+  if (!grepl("ec\\.europa\\.eu/eurostat/", link)) stop("Only Eurostat links allowed.")
+  
+  as_tibble_safe <- function(x) {
+    if (is.data.frame(x)) tibble::as_tibble(x)
+    else tibble::tibble(data = list(x))
+  }
+  
+  download_content <- function(link) {
+    resp <- httr::GET(link)
+    httr::stop_for_status(resp)
+    raw <- httr::content(resp, as = "raw")
+    if (httr::http_type(resp) == "application/gzip" || grepl("compress=true", link, ignore.case = TRUE)) {
+      message("Decompressing content...")
+      raw <- memDecompress(raw, type = "gzip", asChar = TRUE)
+    } else {
+      raw <- rawToChar(raw)
+    }
+    raw
+  }
+  
+  # # Comext DS-prefixed datasets must use correct base
+  if (grepl("/comext/dissemination", link)) {
+    # Extract dataset portion safely
+    dataset_match <- regmatches(link, regexpr("/ds-[0-9]+", tolower(link)))
+    
+    if (length(dataset_match) == 0) {
+      stop("Comext API requires DS-prefixed dataset codes (e.g., ds-056120).")
+    }
+  }
+  
+  # TSV format
+  if (grepl("format=TSV", link, ignore.case = TRUE) || grepl("\\.tsv", link, ignore.case = TRUE)) {
+    message("Downloading TSV...")
+    text_content <- download_content(link)
+    return(as_tibble_safe(read.delim(text = text_content, check.names = FALSE, sep = "\t")))
+  }
+  
+  # SDMX-CSV
+  if (grepl("format=csvdata", link, ignore.case = TRUE) || grepl("\\.csv", link, ignore.case = TRUE)) {
+    message("Downloading SDMX-CSV 1.0...")
+    text_content <- download_content(link)
+    
+    lines <- strsplit(text_content, "\n", fixed = TRUE)[[1]]
+    
+    # Detect first line with clear header fields
+    data_start <- which(sapply(lines, function(l) {
+      fields <- strsplit(l, ",", fixed = TRUE)[[1]]
+      length(fields) > 1 && all(nzchar(fields) | fields == "")
+    }))[1]
+    
+    if (is.na(data_start)) stop("Could not detect valid SDMX-CSV header for Comext dataset.")
+    
+    clean_text <- paste(lines[data_start:length(lines)], collapse = "\n")
+    
+    # Explicit row.names = NULL prevents first column being treated as row names
+    return(as_tibble_safe(read.csv(text = clean_text, check.names = FALSE, row.names = NULL)))
+  }
+  
+  # SDMX-ML 2.1 StructureSpecific
+  if (grepl("format=structurespecificdata", link, ignore.case = TRUE) && grepl("formatVersion=2.1", link, ignore.case = TRUE)) {
+    if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
+    message("Downloading SDMX-ML 2.1 StructureSpecific...")
+    xml_text <- download_content(link)
+    doc <- xml2::read_xml(xml_text)
+    ns <- xml2::xml_ns(doc)
+    series_nodes <- xml2::xml_find_all(doc, ".//Series", ns)
+    result <- purrr::map_dfr(series_nodes, function(series) {
+      series_atts <- xml2::xml_attrs(series)
+      obs_nodes <- xml2::xml_find_all(series, ".//Obs", ns)
+      purrr::map_dfr(obs_nodes, function(o) {
+        data.frame(as.list(series_atts), time = xml2::xml_attr(o, "TIME_PERIOD"), value = as.numeric(xml2::xml_attr(o, "OBS_VALUE")), stringsAsFactors = FALSE)
+      })
+    })
+    return(tibble::as_tibble(result))
+  }
+  
+  # SDMX-ML 2.1 GenericData
+  if (grepl("format=genericdata", link, ignore.case = TRUE)) {
+    if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
+    message("Downloading SDMX-ML 2.1 GenericData...")
+    xml_text <- download_content(link)
+    doc <- xml2::read_xml(xml_text)
+    ns <- xml2::xml_ns(doc)
+    series_nodes <- xml2::xml_find_all(doc, ".//g:Series", ns)
+    result <- purrr::map_dfr(series_nodes, function(series) {
+      key_nodes <- xml2::xml_find_all(series, ".//g:Value", ns)
+      key_vals <- setNames(xml2::xml_attr(key_nodes, "value"), xml2::xml_attr(key_nodes, "id"))
+      obs_nodes <- xml2::xml_find_all(series, ".//g:Obs", ns)
+      purrr::map_dfr(obs_nodes, function(obs) {
+        data.frame(as.list(key_vals), time = xml2::xml_attr(xml2::xml_find_first(obs, ".//g:ObsDimension", ns), "value"), value = as.numeric(xml2::xml_attr(xml2::xml_find_first(obs, ".//g:ObsValue", ns), "value")), stringsAsFactors = FALSE)
+      })
+    })
+    return(tibble::as_tibble(result))
+  }
+  
+  # SDMX-ML 3.0 StructureSpecific
+  if (grepl("/sdmx/3.0/data", link) && (grepl("\\.xml", link, ignore.case = TRUE) || !grepl("format=", link, ignore.case = TRUE))) {
+    if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
+    message("Downloading SDMX-ML 3.0 StructureSpecific...")
+    
+    xml_text <- download_content(link)
+    doc <- xml2::read_xml(xml_text)
+    ns <- xml2::xml_ns(doc)
+    
+    series_nodes <- xml2::xml_find_all(doc, ".//m:Series", ns)
+    if (length(series_nodes) == 0) {
+      series_nodes <- xml2::xml_find_all(doc, ".//Series", ns)
+    }
+    
+    result <- purrr::map_dfr(series_nodes, function(series) {
+      #series_atts <- as.list(xml2::xml_attrs(series))  
+      series_atts <- xml2::xml_attrs(series)
+
+      obs <- xml2::xml_find_all(series, ".//Obs", ns)
+      if (length(obs) == 0) {
+        obs <- xml2::xml_find_all(series, ".//Obs", ns)
+      }
+      
+      purrr::map_dfr(obs, function(o) {
+        row <- c(series_atts, list(
+          time = xml2::xml_attr(o, "TIME_PERIOD"),
+          value = as.numeric(xml2::xml_attr(o, "OBS_VALUE"))
+        ))
+        data.frame(row, stringsAsFactors = FALSE)
+      })
+    })
+    
+    return(tibble::as_tibble(result))
+  }
+  
+  # JSON-stat handling (Statistics API specific)
+  if (grepl("format=JSON", link, ignore.case = TRUE)) {
+    message("Downloading JSON-stat 2.0...")
+    json_data <- jsonlite::fromJSON(link)
+    value_data <- json_data$value
+    dims <- json_data$dimension
+    if (is.null(value_data) && !is.null(json_data$dataset$value)) {
+      value_data <- json_data$dataset$value
+      dims <- json_data$dataset$dimension
+    }
+    if (!is.null(value_data) && !is.null(dims)) {
+      dim_ids <- names(dims)
+      dim_lists <- lapply(dim_ids, function(id) names(dims[[id]]$category$index))
+      names(dim_lists) <- dim_ids
+      grid <- expand.grid(dim_lists, stringsAsFactors = FALSE)
+      values <- rep(NA_real_, nrow(grid))
+      idx <- as.integer(names(value_data)) + 1
+      values[idx] <- as.numeric(unlist(value_data))
+      grid$value <- values
+      message("Returning flattened tibble.")
+      return(tibble::as_tibble(grid))
+    }
+    flat <- jsonlite::flatten(json_data)
+    return(as_tibble_safe(flat))
+  }
+  
+  stop("Unsupported or unknown format.")
+}
