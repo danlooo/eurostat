@@ -10,63 +10,83 @@
 get_eurostat_link <- function(link, destfile = NULL) {
   if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")
   if (!grepl("ec\\.europa\\.eu/eurostat/", link)) stop("Only Eurostat links allowed.")
-  
+
   as_tibble_safe <- function(x) {
     if (is.data.frame(x)) tibble::as_tibble(x)
     else tibble::tibble(data = list(x))
   }
-  
+
   download_content <- function(link) {
-    resp <- httr::GET(link)
-    httr::stop_for_status(resp)
-    raw <- httr::content(resp, as = "raw")
-    if (httr::http_type(resp) == "application/gzip" || grepl("compress=true", link, ignore.case = TRUE)) {
+    resp <- httr2::request(link) |>
+      httr2::req_user_agent("eurostat-r-client") |>
+      httr2::req_perform()
+
+    httr2::resp_check_status(resp)
+
+    raw <- httr2::resp_body_raw(resp)
+
+    if (httr2::resp_content_type(resp) == "application/gzip" || grepl("compress=true", link, ignore.case = TRUE)) {
       message("Decompressing content...")
       raw <- memDecompress(raw, type = "gzip", asChar = TRUE)
     } else {
       raw <- rawToChar(raw)
     }
+
     raw
   }
-  
-  # # Comext DS-prefixed datasets must use correct base
+
+  # Comext DS-prefixed datasets must use correct base
   if (grepl("/comext/dissemination", link)) {
-    # Extract dataset portion safely
     dataset_match <- regmatches(link, regexpr("/ds-[0-9]+", tolower(link)))
-    
     if (length(dataset_match) == 0) {
       stop("Comext API requires DS-prefixed dataset codes (e.g., ds-056120).")
     }
   }
-  
+
   # TSV format
   if (grepl("format=TSV", link, ignore.case = TRUE) || grepl("\\.tsv", link, ignore.case = TRUE)) {
     message("Downloading TSV...")
     text_content <- download_content(link)
-    return(as_tibble_safe(read.delim(text = text_content, check.names = FALSE, sep = "\t")))
+
+    df <- read.delim(
+      text = text_content,
+      sep = "\t",
+      check.names = FALSE,
+      na.strings = c(":", ": ")
+    )
+
+    # Unpack first column
+    first_col_name <- names(df)[1]
+    dim_names <- strsplit(first_col_name, ",", fixed = TRUE)[[1]]
+    dim_values <- strsplit(df[[1]], ",", fixed = TRUE)
+    dim_matrix <- do.call(rbind, dim_values)
+    dim_df <- as.data.frame(dim_matrix, stringsAsFactors = FALSE)
+    colnames(dim_df) <- dim_names
+
+    # Optional: fix backslash column name
+    names(dim_df)[grepl("\\\\", names(dim_df))] <- sub("\\\\.*", "", names(dim_df)[grepl("\\\\", names(dim_df))])
+
+    final_df <- dplyr::bind_cols(dim_df, df[-1])
+    return(tibble::as_tibble(final_df))
   }
-  
+
+
+
+
   # SDMX-CSV
   if (grepl("format=csvdata", link, ignore.case = TRUE) || grepl("\\.csv", link, ignore.case = TRUE)) {
     message("Downloading SDMX-CSV 1.0...")
     text_content <- download_content(link)
-    
     lines <- strsplit(text_content, "\n", fixed = TRUE)[[1]]
-    
-    # Detect first line with clear header fields
     data_start <- which(sapply(lines, function(l) {
       fields <- strsplit(l, ",", fixed = TRUE)[[1]]
       length(fields) > 1 && all(nzchar(fields) | fields == "")
     }))[1]
-    
     if (is.na(data_start)) stop("Could not detect valid SDMX-CSV header for Comext dataset.")
-    
     clean_text <- paste(lines[data_start:length(lines)], collapse = "\n")
-    
-    # Explicit row.names = NULL prevents first column being treated as row names
     return(as_tibble_safe(read.csv(text = clean_text, check.names = FALSE, row.names = NULL)))
   }
-  
+
   # SDMX-ML 2.1 StructureSpecific
   if (grepl("format=structurespecificdata", link, ignore.case = TRUE) && grepl("formatVersion=2.1", link, ignore.case = TRUE)) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
@@ -84,7 +104,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
     })
     return(tibble::as_tibble(result))
   }
-  
+
   # SDMX-ML 2.1 GenericData
   if (grepl("format=genericdata", link, ignore.case = TRUE)) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
@@ -103,30 +123,24 @@ get_eurostat_link <- function(link, destfile = NULL) {
     })
     return(tibble::as_tibble(result))
   }
-  
+
   # SDMX-ML 3.0 StructureSpecific
   if (grepl("/sdmx/3.0/data", link) && (grepl("\\.xml", link, ignore.case = TRUE) || !grepl("format=", link, ignore.case = TRUE))) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
     message("Downloading SDMX-ML 3.0 StructureSpecific...")
-    
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
-    
     series_nodes <- xml2::xml_find_all(doc, ".//m:Series", ns)
     if (length(series_nodes) == 0) {
       series_nodes <- xml2::xml_find_all(doc, ".//Series", ns)
     }
-    
     result <- purrr::map_dfr(series_nodes, function(series) {
-      #series_atts <- as.list(xml2::xml_attrs(series))  
       series_atts <- xml2::xml_attrs(series)
-
       obs <- xml2::xml_find_all(series, ".//Obs", ns)
       if (length(obs) == 0) {
         obs <- xml2::xml_find_all(series, ".//Obs", ns)
       }
-      
       purrr::map_dfr(obs, function(o) {
         row <- c(series_atts, list(
           time = xml2::xml_attr(o, "TIME_PERIOD"),
@@ -135,11 +149,10 @@ get_eurostat_link <- function(link, destfile = NULL) {
         data.frame(row, stringsAsFactors = FALSE)
       })
     })
-    
     return(tibble::as_tibble(result))
   }
-  
-  # JSON-stat handling (Statistics API specific)
+
+  # JSON-stat handling
   if (grepl("format=JSON", link, ignore.case = TRUE)) {
     message("Downloading JSON-stat 2.0...")
     json_data <- jsonlite::fromJSON(link)
@@ -164,6 +177,6 @@ get_eurostat_link <- function(link, destfile = NULL) {
     flat <- jsonlite::flatten(json_data)
     return(as_tibble_safe(flat))
   }
-  
+
   stop("Unsupported or unknown format.")
 }
