@@ -7,7 +7,7 @@
 #' @param destfile Optional file path for saving raw files (only for Excel)
 #' @return Tibble for all supported formats
 #' @export
-get_eurostat_link <- function(link, destfile = NULL) {
+get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")
   if (!grepl("ec\\.europa\\.eu/eurostat/", link)) stop("Only Eurostat links allowed.")
 
@@ -26,7 +26,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
     raw <- httr2::resp_body_raw(resp)
 
     if (httr2::resp_content_type(resp) == "application/gzip" || grepl("compress=true", link, ignore.case = TRUE)) {
-      message("Decompressing content...")
+      if (verbose) message("Decompressing content...")
       raw <- memDecompress(raw, type = "gzip", asChar = TRUE)
     } else {
       raw <- rawToChar(raw)
@@ -45,7 +45,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
 
   # TSV format
   if (grepl("format=TSV", link, ignore.case = TRUE) || grepl("\\.tsv", link, ignore.case = TRUE)) {
-    message("Downloading TSV...")
+    if (verbose) message("Downloading TSV...")
     text_content <- download_content(link)
 
     df <- read.delim(
@@ -70,12 +70,9 @@ get_eurostat_link <- function(link, destfile = NULL) {
     return(tibble::as_tibble(final_df))
   }
 
-
-
-
   # SDMX-CSV
   if (grepl("format=csvdata", link, ignore.case = TRUE) || grepl("\\.csv", link, ignore.case = TRUE)) {
-    message("Downloading SDMX-CSV 1.0...")
+    if (verbose) message("Downloading SDMX-CSV 1.0...")
     text_content <- download_content(link)
     lines <- strsplit(text_content, "\n", fixed = TRUE)[[1]]
     data_start <- which(sapply(lines, function(l) {
@@ -90,7 +87,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
   # SDMX-ML 2.1 StructureSpecific
   if (grepl("format=structurespecificdata", link, ignore.case = TRUE) && grepl("formatVersion=2.1", link, ignore.case = TRUE)) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    message("Downloading SDMX-ML 2.1 StructureSpecific...")
+    if (verbose) message("Downloading SDMX-ML 2.1 StructureSpecific...")
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -108,7 +105,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
   # SDMX-ML 2.1 GenericData
   if (grepl("format=genericdata", link, ignore.case = TRUE)) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    message("Downloading SDMX-ML 2.1 GenericData...")
+    if (verbose) message("Downloading SDMX-ML 2.1 GenericData...")
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -127,7 +124,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
   # SDMX-ML 3.0 StructureSpecific
   if (grepl("/sdmx/3.0/data", link) && (grepl("\\.xml", link, ignore.case = TRUE) || !grepl("format=", link, ignore.case = TRUE))) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    message("Downloading SDMX-ML 3.0 StructureSpecific...")
+    if (verbose) message("Downloading SDMX-ML 3.0 StructureSpecific...")
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -154,7 +151,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
 
   # JSON-stat handling
   if (grepl("format=JSON", link, ignore.case = TRUE)) {
-    message("Downloading JSON-stat 2.0...")
+    if (verbose) message("Downloading JSON-stat 2.0...")
     json_data <- jsonlite::fromJSON(link)
     value_data <- json_data$value
     dims <- json_data$dimension
@@ -171,7 +168,7 @@ get_eurostat_link <- function(link, destfile = NULL) {
       idx <- as.integer(names(value_data)) + 1
       values[idx] <- as.numeric(unlist(value_data))
       grid$value <- values
-      message("Returning flattened tibble.")
+      if (verbose) message("Returning flattened tibble.")
       return(tibble::as_tibble(grid))
     }
     flat <- jsonlite::flatten(json_data)

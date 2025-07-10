@@ -21,6 +21,7 @@ get_eurostat_geospatial(
   cache_dir = NULL,
   crs = "4326",
   make_valid = "DEPRECATED",
+  verbose = TRUE,
   ...
 )
 }

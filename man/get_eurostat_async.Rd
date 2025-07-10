@@ -15,7 +15,8 @@ get_eurostat_async(
   legacy.data.output = FALSE,
   wait = 1,
   max_wait = 60,
-  compressed = TRUE
+  compressed = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{

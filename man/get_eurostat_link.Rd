@@ -4,7 +4,7 @@
 \alias{get_eurostat_link}
 \title{Download Eurostat Data from API Link (robust, no list-columns, async-aware)}
 \usage{
-get_eurostat_link(link, destfile = NULL)
+get_eurostat_link(link, destfile = NULL, verbose = TRUE)
 }
 \arguments{
 \item{link}{Eurostat "Copy API link" URL or Data Browser download link}

@@ -23,7 +23,8 @@ get_eurostat_async <- function(
     legacy.data.output = FALSE,
     wait = 1,
     max_wait = 60,
-    compressed = TRUE
+    compressed = TRUE,
+    verbose = TRUE
 ) {
   stopifnot(nzchar(id))
   lang <- check_lang(lang)
@@ -56,7 +57,7 @@ get_eurostat_async <- function(
   outcome_index <- which(c(length(available_pos) > 0, length(fail_pos) > 0, TRUE))[1]
   outcome <- c("success", "fail", "timeout")[outcome_index]
 
-  message(sprintf("Final status after %d seconds: %s", wait_times[length(statuses)], outcome))
+  if (verbose) message(sprintf("Final status after %d seconds: %s", wait_times[length(statuses)], outcome))
 
   handlers <- list(
     "success" = function() {
@@ -72,7 +73,7 @@ get_eurostat_async <- function(
             return(TRUE)
           }
           if (i < retries) {
-            message("Download failed (HTTP ", httr::status_code(res), "). Retrying...")
+            if (verbose) message("Download failed (HTTP ", httr::status_code(res), "). Retrying...")
             Sys.sleep(delay)
           }
         }
@@ -92,7 +93,7 @@ get_eurostat_async <- function(
           if (nrow(zip_list) == 0) stop("Empty ZIP archive received")
           csv_file <- unzip(tfile, exdir = tempdir())[1]
         } else {
-          message("Expected ZIP archive, but received CSV instead — continuing anyway.")
+          if (verbose) message("Expected ZIP archive, but received CSV instead — continuing anyway.")
           csv_file <- tfile
         }
       } else {
