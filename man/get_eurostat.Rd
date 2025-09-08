@@ -92,6 +92,8 @@ On Windows requires that RTools is installed.}
 Default is FALSE. If TRUE, the object will try to emulate the naming
 conventions of eurostat package version 3.7.x and earlier.}
 
+\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
+
 \item{...}{
   Arguments passed on to \code{\link[=get_eurostat_json]{get_eurostat_json}}
   \describe{
@@ -382,8 +384,8 @@ See \code{citation("eurostat")}:
   Journal 9(1), pp. 385-392. doi: 10.32614/RJ-2017-019
 
   Lahti, L., Huovari J., Kainu M., Biecek P., Hernangomez D., Antal D.,
-  and Kantanen P. (2024). eurostat: Tools for Eurostat Open Data
-  [Computer software]. R package version 4.1.0.9001.
+  and Kantanen P. (2025). eurostat: Tools for Eurostat Open Data
+  [Computer software]. R package version 4.1.0.9002.
   https://github.com/rOpenGov/eurostat
 
 To see these entries in BibTeX format, use 'print(<citation>,

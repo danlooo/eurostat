@@ -60,9 +60,13 @@ can not be used with a \code{filters}.}
 Default is FALSE. If TRUE, the object will try to emulate the naming
 conventions of eurostat package version 3.7.x and earlier.}
 
-\item{wait}{Integer. Seconds between status checks.}
+\item{wait}{Integer. Seconds between status checks. Default is 1 second.}
 
-\item{max_wait}{Integer. Max time to wait in seconds.}
+\item{max_wait}{Integer. Max time to wait in seconds. Default is 60 seconds.}
+
+\item{compressed}{Logical. Download data in compressed format? Default is TRUE.}
+
+\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
 }
 \value{
 A data.frame containing the SDMX-CSV data.

@@ -15,7 +15,7 @@ utilities.
     \tab  \cr
    \strong{Package} \tab eurostat \cr
    \strong{Type} \tab Package \cr
-   \strong{Version} \tab 4.1.0.9001 \cr
+   \strong{Version} \tab 4.1.0.9002 \cr
    \strong{Date} \tab 2014-2024 \cr
    \strong{License} \tab BSD_2_clause + file LICENSE \cr
    \strong{LazyLoad} \tab yes \cr
@@ -179,7 +179,7 @@ Example:
 
 For more information about data filtering see Eurostat documentation
 on API Statistics:
-\url{https://ec.europa.eu/eurostat/web/user-guides/data-browser/api-data-access/api-getting-started/api#APIGettingstartedwithstatisticsAPI-Filterdata}
+\url{https://ec.europa.eu/eurostat/web/user-guides/data-browser/api-data-access/api-getting-started/api#APIStatisticsdataquery-TheparametersdefinedintheRESTrequest}
 }
 }
 
@@ -355,8 +355,8 @@ See \code{citation("eurostat")}:
   Journal 9(1), pp. 385-392. doi: 10.32614/RJ-2017-019
 
   Lahti, L., Huovari J., Kainu M., Biecek P., Hernangomez D., Antal D.,
-  and Kantanen P. (2024). eurostat: Tools for Eurostat Open Data
-  [Computer software]. R package version 4.1.0.9001.
+  and Kantanen P. (2025). eurostat: Tools for Eurostat Open Data
+  [Computer software]. R package version 4.1.0.9002.
   https://github.com/rOpenGov/eurostat
 
 To see these entries in BibTeX format, use 'print(<citation>,

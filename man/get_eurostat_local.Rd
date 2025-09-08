@@ -16,6 +16,8 @@ get_eurostat_local(
 )
 }
 \arguments{
+\item{file}{file path as string}
+
 \item{time_format}{a string giving a type of the conversion of the time column from the
 eurostat format. The default argument "\code{date}" converts to a \code{\link[=Date]{Date()}} class
 with the date being the first day of the period. A "\code{date_last}" argument
@@ -66,5 +68,5 @@ Read compressed or uncompressed SDMX-CSV files
 This implementation is experimental. It uses only data.table methods to read
 and wrangle data files.
 
-Download datasets in sdmx-csv format from \link{https://ec.europa.eu/eurostat/databrowser/bulk?lang=en}
+Download datasets in sdmx-csv format from \url{https://ec.europa.eu/eurostat/databrowser/bulk?lang=en}
 }

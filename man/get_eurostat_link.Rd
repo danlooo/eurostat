@@ -10,6 +10,8 @@ get_eurostat_link(link, destfile = NULL, verbose = TRUE)
 \item{link}{Eurostat "Copy API link" URL or Data Browser download link}
 
 \item{destfile}{Optional file path for saving raw files (only for Excel)}
+
+\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
 }
 \value{
 Tibble for all supported formats

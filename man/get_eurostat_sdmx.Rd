@@ -56,6 +56,8 @@ On Windows requires that RTools is installed.}
 \item{agency}{Either "Eurostat" (default), "Eurostat_comext"
 (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"}
 
+\item{compressed}{Logical. Download data in compressed format? Default is TRUE.}
+
 \item{keepFlags}{a logical whether the flags (e.g. "confidential",
 "provisional") should be kept in a separate column or if they
 can be removed. Default is \code{FALSE}. For flag values see:
@@ -67,6 +69,12 @@ can not be used with a \code{filters}.}
 \item{legacy.data.output}{Use legacy column names and data object structure.
 Default is FALSE. If TRUE, the object will try to emulate the naming
 conventions of eurostat package version 3.7.x and earlier.}
+
+\item{wait}{Integer. Seconds between status checks. Default is 1 second.}
+
+\item{max_wait}{Integer. Max time to wait in seconds. Default is 60 seconds.}
+
+\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
 }
 \description{
 Download data sets from Eurostat \url{https://ec.europa.eu/eurostat}
