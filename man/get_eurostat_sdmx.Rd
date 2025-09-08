@@ -16,7 +16,8 @@ get_eurostat_sdmx(
   keepFlags = FALSE,
   legacy.data.output = FALSE,
   wait = 10,
-  max_wait = 600
+  max_wait = 600,
+  verbose = TRUE
 )
 }
 \arguments{

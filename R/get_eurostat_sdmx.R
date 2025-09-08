@@ -28,7 +28,8 @@ get_eurostat_sdmx <- function(
     keepFlags = FALSE,
     legacy.data.output = FALSE,
     wait = 10,
-    max_wait = 600
+    max_wait = 600,
+    verbose = TRUE
     ) {
 
   # Check if you have access to ec.europe.eu.
@@ -102,7 +103,7 @@ get_eurostat_sdmx <- function(
     content <- httr::content(res, as = "parsed", encoding = "UTF-8")
     async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
     if (!is.na(async_id) && nzchar(async_id)) {
-      message("Async mode triggered. Downloading via async ID: ", async_id)
+      if (verbose) message("Async mode triggered. Downloading via async ID: ", async_id)
       return(get_eurostat_async(
         id = async_id,
         time_format = time_format,
@@ -120,9 +121,9 @@ get_eurostat_sdmx <- function(
       message(" Response was XML, but no async <id> found. Treating as sync (unexpected).")
     }
   } else if (grepl("csv", ctype, ignore.case = TRUE)) {
-    message("Synchronous mode: CSV data returned directly.")
+    if (verbose) message("Synchronous mode: CSV data returned directly.")
   } else {
-    message("Unexpected content type: ", ctype)
+    if (verbose) message("Unexpected content type: ", ctype)
   }
 
 
@@ -431,7 +432,7 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
   if (inherits(y, "data.table")) {
     for (i in seq_len(nrow(dimension_df))) {
       resourceID <- dimension_df$codelist_id[[i]]
-      message(paste("Building codelist URL for resourceID:", resourceID))
+      if (verbose) message(paste("Building codelist URL for resourceID:", resourceID))
       codelist_url <- paste0(
         api_base_uri,
         "/sdmx/2.1/",
@@ -449,7 +450,7 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
         column_to_handle <- dimension_df$dimension_id[[i]]
         codes_to_label <- unique(y[[column_to_handle]])
         codelist_subset <- codelist[which(codelist[,1] %in% codes_to_label),]
-        message(paste("Labeling dimension (column):", column_to_handle))
+        if (verbose) message(paste("Labeling dimension (column):", column_to_handle))
         for (j in seq_len(nrow(codelist_subset))) {
           data.table::set(y, i=which(y[[column_to_handle]] == codelist_subset[j,1]), j = column_to_handle, value = codelist_subset[j,2])
         }
