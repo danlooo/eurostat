@@ -6,32 +6,32 @@ test_that("get_eurostat_geospatial errors", {
   skip_if(!giscoR::gisco_check_access(), "No access to GISCO")
 
   # Testing argument 'output_class'
-  expect_error(get_eurostat_geospatial(output_class = 0))
-  expect_error(get_eurostat_geospatial(output_class = "foo"))
-  expect_error(get_eurostat_geospatial(output_class = "sf", "df"))
+  expect_error(get_eurostat_geospatial(output_class = 0, verbose = FALSE))
+  expect_error(get_eurostat_geospatial(output_class = "foo", verbose = FALSE))
+  expect_error(get_eurostat_geospatial(output_class = "sf", "df", verbose = FALSE))
 
   # Testing argument 'resolution'
-  expect_error(get_eurostat_geospatial(resolution = 12345))
-  expect_error(get_eurostat_geospatial(resolution = 1:2))
+  expect_error(get_eurostat_geospatial(resolution = 12345, verbose = FALSE))
+  expect_error(get_eurostat_geospatial(resolution = 1:2, verbose = FALSE))
 
   # Testing argument nuts_level
-  expect_error(get_eurostat_geospatial(nuts_level = 12345))
-  expect_error(get_eurostat_geospatial(nuts_level = 1:2))
+  expect_error(get_eurostat_geospatial(nuts_level = 12345, verbose = FALSE))
+  expect_error(get_eurostat_geospatial(nuts_level = 1:2, verbose = FALSE))
 
   # Testing argument year
-  expect_error(get_eurostat_geospatial(year = 1900))
-  expect_error(get_eurostat_geospatial(year = c(2003, 2006)))
+  expect_error(get_eurostat_geospatial(year = 1900, verbose = FALSE))
+  expect_error(get_eurostat_geospatial(year = c(2003, 2006, verbose = FALSE)))
 
-  # Testing argment cache
-  expect_error(get_eurostat_geospatial(cache = as.logical(NA), year = 2021))
-  expect_error(get_eurostat_geospatial(cache = c(TRUE, FALSE), year = 2021))
+  # Testing argument cache
+  expect_error(get_eurostat_geospatial(cache = as.logical(NA), year = 2021, verbose = FALSE))
+  expect_error(get_eurostat_geospatial(cache = c(TRUE, FALSE), year = 2021, verbose = FALSE))
 
   # Testing argument CRS
   expect_error(get_eurostat_geospatial(crs = "north polar stereographic"))
-  expect_error(get_eurostat_geospatial(crs = c(4326, 3035)))
+  expect_error(get_eurostat_geospatial(crs = c(4326, 3035), verbose = FALSE))
 
   # Invalid combinations
-  expect_error(get_eurostat_geospatial(resolution = 60, year = 2003))
+  expect_error(get_eurostat_geospatial(resolution = 60, year = 2003, verbose = FALSE))
 })
 
 test_that("get_eurostat_geospatial messages", {
@@ -167,7 +167,7 @@ test_that("get_eurostat_geospatial df", {
     nuts_level = "all",
     output_class = "df",
     verbose = TRUE
-  ), "giscoR")
+  ), "Extracting data from eurostat::eurostat_geodata_60_2016")
   expect_message(gn0 <- get_eurostat_geospatial(
     nuts_level = "0",
     crs = 3035,
