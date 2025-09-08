@@ -92,7 +92,7 @@ On Windows requires that RTools is installed.}
 Default is FALSE. If TRUE, the object will try to emulate the naming
 conventions of eurostat package version 3.7.x and earlier.}
 
-\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
+\item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 
 \item{...}{
   Arguments passed on to \code{\link[=get_eurostat_json]{get_eurostat_json}}

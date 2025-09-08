@@ -74,7 +74,7 @@ conventions of eurostat package version 3.7.x and earlier.}
 
 \item{max_wait}{Integer. Max time to wait in seconds. Default is 60 seconds.}
 
-\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
+\item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 }
 \description{
 Download data sets from Eurostat \url{https://ec.europa.eu/eurostat}

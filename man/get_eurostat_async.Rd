@@ -66,7 +66,7 @@ conventions of eurostat package version 3.7.x and earlier.}
 
 \item{compressed}{Logical. Download data in compressed format? Default is TRUE.}
 
-\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
+\item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 }
 \value{
 A data.frame containing the SDMX-CSV data.

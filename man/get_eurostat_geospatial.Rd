@@ -63,7 +63,7 @@ directory by using this argument. The cache directory can also be set with
 \item "3857" - Pseudo-Mercator
 }}
 
-\item{verbose}{Output messages when downloading data? Default is \code{TRUE}.}
+\item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 
 \item{...}{
   Arguments passed on to \code{\link[giscoR:gisco_get_nuts]{giscoR::gisco_get_nuts}}
