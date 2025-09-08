@@ -6,6 +6,15 @@
 * Add new function `get_eurostat_local()` for reading local SDMX-CSV (.csv) and compressed SDMX-CSV (.csv.gz) files downloaded manually from the Eurostat website. This function relies only on `data.table` functions as it is expected that locally stored files may be larger and require more efficient handling with regards to RAM and processing time constrains. `tidy_eurostat_sdmx()` and `parse_filename()` are helper functions related to this function.
 * New `legacy_data_format()` function and `legacy.data.output` attribute in `get_eurostat()` and `get_eurostat_local()` transforms modern API naming conventions into the format that was used in the old API and eurostat package versions 3.8.* and prior. It is a helper function to other functions.
 
+## Minor updates
+
+* `get_eurostat_geospatial()` documentation mentions that data from 2024 is now available (fixes issue #327 by @yhsong1013)
+* Fix mentions to Eurostat base URLs in `check_access_to_data()`, `get_eurostat()`, `get_eurostat_json()`, `get_eurostat_sdmx()`, `label_eurostat()` and `search_eurostat()` (fixes issue #326 by @olivierchantrel)
+
+## Deprecated and defunct
+
+* Remove deprecated parameter `make_valid` from `get_eurostat_geospatial()`
+
 # eurostat 4.0.0
 
 ## Major updates
