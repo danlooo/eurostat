@@ -68,6 +68,7 @@
 #' @param legacy.data.output Use legacy column names and data object structure.
 #' Default is FALSE. If TRUE, the object will try to emulate the naming
 #' conventions of eurostat package version 3.7.x and earlier.
+#' @param verbose Output messages when downloading data? Default is `TRUE`.
 #' @inheritDotParams get_eurostat_json
 #'
 #' @inherit eurostat-package references
@@ -193,12 +194,12 @@ get_eurostat <- function(id,
                          verbose = TRUE,
                          ...) {
 
-  # Check if you have access to ec.europe.eu.
-  # If dataset is cached, access to ec.europe.eu is not needed
+  # Check if you have access to ec.europa.eu.
+  # If dataset is cached, access to ec.europa.eu is not needed
   # Therefore this is a warning, not a stop
   if (!check_access_to_data()) {
     # nocov start
-    warning("You have no access to ec.europe.eu.
+    warning("You have no access to ec.europa.eu.
       Please check your connection and/or review your proxy settings")
     # nocov end
   }

@@ -7,6 +7,7 @@
 #' Download data from SDMX API
 #'
 #' @inheritParams get_eurostat
+#' @inheritParams get_eurostat_async
 #' @param agency Either "Eurostat" (default), "Eurostat_comext"
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
 #'
@@ -32,12 +33,12 @@ get_eurostat_sdmx <- function(
     verbose = TRUE
     ) {
 
-  # Check if you have access to ec.europe.eu.
-  # If dataset is cached, access to ec.europe.eu is not needed
+  # Check if you have access to ec.europa.eu.
+  # If dataset is cached, access to ec.europa.eu is not needed
   # Therefore this is a warning, not a stop
   if (!check_access_to_data()) {
     # nocov start
-    stop("You have no access to ec.europe.eu.
+    stop("You have no access to ec.europa.eu.
       Please check your connection and/or review your proxy settings")
     # nocov end
   }
