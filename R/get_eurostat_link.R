@@ -5,7 +5,9 @@
 #'
 #' @param link Eurostat "Copy API link" URL or Data Browser download link
 #' @param destfile Optional file path for saving raw files (only for Excel)
+#' @inheritParams get_eurostat
 #' @return Tibble for all supported formats
+#' @importFrom purrr map_dfr
 #' @export
 get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")

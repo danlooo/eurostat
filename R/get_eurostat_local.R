@@ -4,9 +4,10 @@
 #' This implementation is experimental. It uses only data.table methods to read
 #' and wrangle data files.
 #' 
-#' Download datasets in sdmx-csv format from [https://ec.europa.eu/eurostat/databrowser/bulk?lang=en]
+#' Download datasets in sdmx-csv format from \url{https://ec.europa.eu/eurostat/databrowser/bulk?lang=en}
 #' 
 #' @inheritParams get_eurostat
+#' @param file file path as string
 #' @importFrom data.table fread
 #' @export
 

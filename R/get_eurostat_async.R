@@ -5,9 +5,12 @@
 #'
 #' @inheritParams get_eurostat_sdmx
 #' @param id Character. Async request ID from initial SDMX call.
-#' @param wait Integer. Seconds between status checks.
-#' @param max_wait Integer. Max time to wait in seconds.
+#' @param wait Integer. Seconds between status checks. Default is 1 second.
+#' @param max_wait Integer. Max time to wait in seconds. Default is 60 seconds.
+#' @param compressed Logical. Download data in compressed format? Default is TRUE.
+#' @inheritParams get_eurostat
 #' @importFrom data.table %chin%
+#' @importFrom httr GET content status_code
 #'
 #' @return A data.frame containing the SDMX-CSV data.
 #'
@@ -93,7 +96,7 @@ get_eurostat_async <- function(
           if (nrow(zip_list) == 0) stop("Empty ZIP archive received")
           csv_file <- unzip(tfile, exdir = tempdir())[1]
         } else {
-          if (verbose) message("Expected ZIP archive, but received CSV instead — continuing anyway.")
+          if (verbose) message("Expected ZIP archive, but received CSV instead - continuing anyway.")
           csv_file <- tfile
         }
       } else {
