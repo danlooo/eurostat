@@ -18,20 +18,14 @@
 #' @param nuts_level Level of NUTS classification of the geospatial data. One of
 #'    "0", "1", "2", "3" or "all" (mimics the original behaviour)
 #' @param year NUTS release year. One of
-#'    "2003", "2006", "2010", "2013", "2016" or "2021"
-#' @param cache a logical whether to do caching. Default is `TRUE`.
-#' @param update_cache a logical whether to update cache. Can be set also with
-#'        `options(eurostat_update = TRUE)`
-#' @param cache_dir a path to a cache directory. See
-#'   [set_eurostat_cache_dir()]. If `NULL` and the cache dir has not been set
-#'   globally the file would be stored in the [tempdir()].
+#'    "2003", "2006", "2010", "2013", "2016", "2021" or "2024"
 #' @param crs projection of the map: 4-digit
 #'   [EPSG code](https://spatialreference.org/ref/epsg/). One of:
 #'  * "4326" - WGS84
 #'  * "3035" - ETRS89 / ETRS-LAEA
 #'  * "3857" - Pseudo-Mercator
 #'
-#' @param make_valid Deprecated
+#' @inheritParams get_eurostat
 #'
 #' @inheritDotParams giscoR::gisco_get_nuts -epsg
 #'
@@ -120,8 +114,8 @@ get_eurostat_geospatial <- function(output_class = "sf",
                                     resolution = "60",
                                     nuts_level = "all", year = "2016",
                                     cache = TRUE, update_cache = FALSE,
-                                    cache_dir = NULL, crs = "4326",
-                                    make_valid = "DEPRECATED", verbose = TRUE, ...) {
+                                    cache_dir = NULL, crs = "4326", 
+                                    verbose = TRUE, ...) {
   # nocov start
   if (!requireNamespace("sf")) {
     if (verbose) message("'sf' package is required for geospatial functionalities")
@@ -135,10 +129,6 @@ get_eurostat_geospatial <- function(output_class = "sf",
   if (output_class == "spdf") {
     if (verbose) message("'spdf' output deprecated. Switching to sf output")
     output_class <- "sf"
-  }
-
-  if (!identical(make_valid, "DEPRECATED")) {
-    message("'make_valid' argument has been deprecated")
   }
 
   # Leaving only specific validations - rest of call would be handled by giscoR
