@@ -273,7 +273,7 @@ convert_time_col <- function(x, time_format) {
 #' @importFrom dplyr filter
 #' @importFrom data.table setDT melt .SD := setcolorder
 #' @importFrom stats na.omit
-#'
+#' @importFrom rlang .data
 #'
 #' @keywords internal utilities database
 tidy_eurostat_sdmx_csv <- function(dat,
@@ -281,7 +281,11 @@ tidy_eurostat_sdmx_csv <- function(dat,
                           select_time = NULL,
                           keepFlags = FALSE) {
   
-  dat <- dplyr::filter(dat, !is.na(OBS_VALUE))
+  # Fix for NSE NOTEs using data.table
+  OBS_FLAG = OBS_VALUE = NULL
+  
+  dat <- dat %>% 
+    dplyr::filter(!is.na(.data$OBS_VALUE))
   
   if (keepFlags == FALSE) {
     # Remove OBS_FLAG column

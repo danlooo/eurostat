@@ -8,6 +8,8 @@
 #' @inheritParams get_eurostat
 #' @return Tibble for all supported formats
 #' @importFrom purrr map_dfr
+#' @importFrom utils read.delim read.csv
+#' @importFrom stats setNames
 #' @export
 get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")
@@ -19,8 +21,8 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   }
 
   download_content <- function(link) {
-    resp <- httr2::request(link) |>
-      httr2::req_user_agent("eurostat-r-client") |>
+    resp <- httr2::request(link) %>% 
+      httr2::req_user_agent("eurostat-r-client") %>% 
       httr2::req_perform()
 
     httr2::resp_check_status(resp)
@@ -50,7 +52,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
     if (verbose) message("Downloading TSV...")
     text_content <- download_content(link)
 
-    df <- read.delim(
+    df <- utils::read.delim(
       text = text_content,
       sep = "\t",
       check.names = FALSE,
@@ -83,7 +85,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
     }))[1]
     if (is.na(data_start)) stop("Could not detect valid SDMX-CSV header for Comext dataset.")
     clean_text <- paste(lines[data_start:length(lines)], collapse = "\n")
-    return(as_tibble_safe(read.csv(text = clean_text, check.names = FALSE, row.names = NULL)))
+    return(as_tibble_safe(utils::read.csv(text = clean_text, check.names = FALSE, row.names = NULL)))
   }
 
   # SDMX-ML 2.1 StructureSpecific
@@ -114,7 +116,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
     series_nodes <- xml2::xml_find_all(doc, ".//g:Series", ns)
     result <- purrr::map_dfr(series_nodes, function(series) {
       key_nodes <- xml2::xml_find_all(series, ".//g:Value", ns)
-      key_vals <- setNames(xml2::xml_attr(key_nodes, "value"), xml2::xml_attr(key_nodes, "id"))
+      key_vals <- stats::setNames(xml2::xml_attr(key_nodes, "value"), xml2::xml_attr(key_nodes, "id"))
       obs_nodes <- xml2::xml_find_all(series, ".//g:Obs", ns)
       purrr::map_dfr(obs_nodes, function(obs) {
         data.frame(as.list(key_vals), time = xml2::xml_attr(xml2::xml_find_first(obs, ".//g:ObsDimension", ns), "value"), value = as.numeric(xml2::xml_attr(xml2::xml_find_first(obs, ".//g:ObsValue", ns), "value")), stringsAsFactors = FALSE)

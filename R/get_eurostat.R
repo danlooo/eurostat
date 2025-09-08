@@ -68,7 +68,7 @@
 #' @param legacy.data.output Use legacy column names and data object structure.
 #' Default is FALSE. If TRUE, the object will try to emulate the naming
 #' conventions of eurostat package version 3.7.x and earlier.
-#' @param verbose Output messages when downloading data? Default is `TRUE`.
+#' @param verbose Output messages when downloading data. Default is `TRUE`.
 #' @inheritDotParams get_eurostat_json
 #'
 #' @inherit eurostat-package references

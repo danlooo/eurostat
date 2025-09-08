@@ -11,6 +11,7 @@
 #' @inheritParams get_eurostat
 #' @importFrom data.table %chin%
 #' @importFrom httr GET content status_code
+#' @importFrom utils unzip
 #'
 #' @return A data.frame containing the SDMX-CSV data.
 #'
@@ -29,6 +30,9 @@ get_eurostat_async <- function(
     compressed = TRUE,
     verbose = TRUE
 ) {
+  # Fix for NSE NOTEs using data.table
+  OBS_FLAG = TIME_PERIOD = OBS_VALUE = NULL
+  
   stopifnot(nzchar(id))
   lang <- check_lang(lang)
   agency <- tolower(agency)
@@ -92,9 +96,9 @@ get_eurostat_async <- function(
       if (compressed) {
         is_zip <- identical(readBin(tfile, what = "raw", n = 2), charToRaw("PK"))
         if (is_zip) {
-          zip_list <- unzip(tfile, list = TRUE)
+          zip_list <- utils::unzip(tfile, list = TRUE)
           if (nrow(zip_list) == 0) stop("Empty ZIP archive received")
-          csv_file <- unzip(tfile, exdir = tempdir())[1]
+          csv_file <- utils::unzip(tfile, exdir = tempdir())[1]
         } else {
           if (verbose) message("Expected ZIP archive, but received CSV instead - continuing anyway.")
           csv_file <- tfile

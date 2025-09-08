@@ -12,7 +12,7 @@
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
 #'
 #' @importFrom curl curl_download
-#' @importFrom utils download.file
+#' @importFrom utils download.file read.csv
 #' @importFrom readr read_tsv cols col_character
 #' @importFrom data.table fread
 #'
@@ -154,7 +154,7 @@ get_eurostat_sdmx <- function(
 
   curl::curl_download(url = url, destfile = tfile)
 
-  dat <- read.csv(tfile, colClasses = "character", row.names = NULL, check.names = FALSE)
+  dat <- utils::read.csv(tfile, colClasses = "character", row.names = NULL, check.names = FALSE)
   if (!keepFlags) {
     col_names <- names(dat)
     dat <- dat[setdiff(col_names, "OBS_FLAG")]
@@ -354,7 +354,7 @@ data_filtering_on_dimension <- function(agency, id, filters) {
   dimension_id_upper <- dimension_df$dimension_id_upper
 
   if (!rlang::is_empty(setdiff(filter_names, dimension_id_upper))) {
-    stop(paste0("Use valid filter dimensions in the correct order: ", paste(dimension_id, collapse = ".")))
+    stop(paste0("Use valid filter dimensions in the correct order: ", paste(dimension_df$dimension_id, collapse = ".")))
   }
 
   # Assumes that dimensions are listed in the order of their positions
@@ -417,7 +417,7 @@ get_codelist_id <- function(agency, id) {
 #
 # }
 
-label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
+label_eurostat_sdmx <- function(x, agency, id, lang = "en", verbose = TRUE) {
   # how many columns there are that can be labeled with a codelist
   dimension_df <- get_codelist_id(agency = agency, id = id)
   resource <- "codelist"
