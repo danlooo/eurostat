@@ -19,6 +19,7 @@ get_eurostat(
   keepFlags = FALSE,
   use.data.table = FALSE,
   legacy.data.output = FALSE,
+  verbose = TRUE,
   ...
 )
 }

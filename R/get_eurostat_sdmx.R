@@ -2,19 +2,19 @@
 #'
 #' @description
 #' Download data sets from Eurostat \url{https://ec.europa.eu/eurostat}
-#' 
+#'
 #' @details
 #' Download data from SDMX API
 #'
 #' @inheritParams get_eurostat
-#' @param agency Either "Eurostat" (default), "Eurostat_comext" 
+#' @param agency Either "Eurostat" (default), "Eurostat_comext"
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
-#' 
+#'
 #' @importFrom curl curl_download
 #' @importFrom utils download.file
 #' @importFrom readr read_tsv cols col_character
 #' @importFrom data.table fread
-#' 
+#'
 #' @export
 get_eurostat_sdmx <- function(
     id,
@@ -26,9 +26,12 @@ get_eurostat_sdmx <- function(
     agency = "Eurostat",
     compressed = TRUE,
     keepFlags = FALSE,
-    legacy.data.output = FALSE
+    legacy.data.output = FALSE,
+    wait = 10,
+    max_wait = 600,
+    verbose = TRUE
     ) {
-  
+
   # Check if you have access to ec.europe.eu.
   # If dataset is cached, access to ec.europe.eu is not needed
   # Therefore this is a warning, not a stop
@@ -38,11 +41,11 @@ get_eurostat_sdmx <- function(
       Please check your connection and/or review your proxy settings")
     # nocov end
   }
-  
+
   lang <- check_lang(lang)
-  
+
   agency <- tolower(agency)
-  
+
   # agencyID <- switch(
   #   agency,
   #   eurostat = "ESTAT",
@@ -51,10 +54,10 @@ get_eurostat_sdmx <- function(
   #   empl = "EMPL",
   #   grow = "GROW"
   # )
-  
+
   api_base_uri <- build_api_base_uri(agency)
   agencyID <- build_agencyID(agency)
-  
+
   # api_base_uri <- switch(
   #   agency,
   #   eurostat = "https://ec.europa.eu/eurostat/api/dissemination",
@@ -62,20 +65,22 @@ get_eurostat_sdmx <- function(
   #   comp = "https://webgate.ec.europa.eu/comp/redisstat/api/dissemination",
   #   empl = "https://webgate.ec.europa.eu/empl/redisstat/api/dissemination",
   #   grow = "https://webgate.ec.europa.eu/grow/redisstat/api/dissemination")
-  
+
   if (is.null(api_base_uri)) stop("Use valid agency")
-  
+
   if (is.null(filters) && agency == "eurostat_comext") {
     stop("Use filters when querying data from Eurostat COMEXT or PRODCOM")
   }
-  
+
   # Following resource is supported: data
   resource <- "data"
   # The identifier of the dataflow reference
   flowRef <- id
   key <- data_filtering_on_dimension(agency, id, filters)
-  compressed <- ifelse(compressed == TRUE, "&compressed=true", "&compressed=false")
-  
+  compressed_flag <- compressed
+  compressed <- if (compressed_flag) "&compressed=true" else "&compressed=false"
+
+
   url <- paste0(
     api_base_uri,
     "/sdmx/2.1/",
@@ -88,62 +93,115 @@ get_eurostat_sdmx <- function(
     "format=SDMX-CSV",
     compressed
   )
-  
+
+  res <- httr::GET(url)
+  #print(res)
+  ctype <- httr::headers(res)[["content-type"]]
+  #print(ctype)
+
+  if (grepl("xml", ctype, ignore.case = TRUE)) {
+    content <- httr::content(res, as = "parsed", encoding = "UTF-8")
+    async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
+    if (!is.na(async_id) && nzchar(async_id)) {
+      if (verbose) message("Async mode triggered. Downloading via async ID: ", async_id)
+      return(get_eurostat_async(
+        id = async_id,
+        time_format = time_format,
+        type = type,
+        lang = lang,
+        use.data.table = use.data.table,
+        agency = agency,
+        keepFlags = keepFlags,
+        legacy.data.output = legacy.data.output,
+        wait = wait,
+        max_wait = max_wait,
+        compressed = compressed_flag
+      ))
+    } else {
+      message(" Response was XML, but no async <id> found. Treating as sync (unexpected).")
+    }
+  } else if (grepl("csv", ctype, ignore.case = TRUE)) {
+    if (verbose) message("Synchronous mode: CSV data returned directly.")
+  } else {
+    if (verbose) message("Unexpected content type: ", ctype)
+  }
+
+
+  # content <- httr::content(res, as = "parsed", encoding = "UTF-8")
+  #
+  # # Check for async ID
+  # async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
+  #
+  # if (!is.na(async_id) && nzchar(async_id)) {
+  #   message("Async mode triggered. Downloading via async ID: ", async_id)
+  #   return(get_eurostat_async(
+  #     id = async_id,
+  #     time_format = time_format,
+  #     type = type,
+  #     lang = lang,
+  #     use.data.table = use.data.table,
+  #     agency = agency,
+  #     keepFlags = keepFlags,
+  #     legacy.data.output = legacy.data.output,
+  #     wait = wait,
+  #     max_wait = max_wait
+  #   ))
+  # }
+
   tfile <- tempfile()
   on.exit(unlink(tfile))
-  
+
   curl::curl_download(url = url, destfile = tfile)
 
-  dat <- read.csv(tfile, colClasses = "character")
+  dat <- read.csv(tfile, colClasses = "character", row.names = NULL, check.names = FALSE)
   if (!keepFlags) {
     col_names <- names(dat)
     dat <- dat[setdiff(col_names, "OBS_FLAG")]
   }
-  
+
   # return(references_resolution(api_base_uri, resource = "datastructure", agencyID = agencyID, resourceID = id))
-  
+
   if (identical(type, "label")){
     dat <- label_eurostat_sdmx(x = dat,
                              agency = agency,
                              id = id,
                              lang = lang)
   }
-  
+
   dat$TIME_PERIOD <- convert_time_col(x = dat$TIME_PERIOD,
                                       time_format = time_format)
-  
+
   dat$OBS_VALUE <- as.numeric(dat$OBS_VALUE)
-  
+
   if (legacy.data.output) {
     dat <- legacy_data_format(dat)
   }
-  
+
   dat
-  
+
 }
 
 extract_metadata <- function(id, agency = "Eurostat") {
-  
+
   api_base_uri <- build_api_base_uri(agency)
-  
+
   data_structure_definition_url <- paste0(
     api_base_uri,
-    "/sdmx/2.1/dataflow/ESTAT/",
-    id,
-    "?compressed=false")
-  
+    "/sdmx/2.1/dataflow/estat/",
+    id)
+
   dsd_xml <- xml2::read_xml(data_structure_definition_url)
-  
+
   # Define namespaces
   namespaces <- xml2::xml_ns(dsd_xml)
-  
+
   # Extract Header information
   header <- xml2::xml_find_first(dsd_xml, ".//m:Header", namespaces)
   header_id <- xml2::xml_text(xml2::xml_find_first(header, ".//m:ID", namespaces))
   prepared <- substr(xml2::xml_text(xml2::xml_find_first(header, ".//m:Prepared", namespaces)),1,10)
   sender_id <- xml2::xml_attr(xml2::xml_find_first(header, ".//m:Sender", namespaces), "id")
-  
-  # Continue with dataflow and annotations extraction 
+
+  # Continue with dataflow and annotations extraction
   dataflow <- xml2::xml_find_first(dsd_xml, ".//s:Dataflow", namespaces)
   dataflow_id <- xml2::xml_attr(dataflow, "id")
   urn <- xml2::xml_attr(dataflow, "urn")
@@ -155,17 +213,17 @@ extract_metadata <- function(id, agency = "Eurostat") {
   name_de <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='de']", namespaces))
   name_en <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='en']", namespaces))
   name_fr <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='fr']", namespaces))
-  
+
   source_institutions <- list()
   doi_details <- NULL
-  
+
   annotations_nodes <- xml2::xml_find_all(dataflow, ".//c:Annotation", namespaces)
   for (node in annotations_nodes) {
     title <- xml2::xml_text(xml2::xml_find_first(node, ".//c:AnnotationTitle", namespaces))
     type <- xml2::xml_text(xml2::xml_find_first(node, ".//c:AnnotationType", namespaces))
     texts_nodes <- xml2::xml_find_all(node, ".//c:AnnotationText", namespaces)
-    
-    
+
+
     # Assign specific annotations based on type
     if (type == "OBS_PERIOD_OVERALL_LATEST") {
       latest_period_timestamp <- title  # Directly store the latest period timestamp
@@ -178,19 +236,19 @@ extract_metadata <- function(id, agency = "Eurostat") {
         lang <- xml2::xml_attr(text_node, "xml:lang")
         text <- xml2::xml_text(text_node)
         source_institutions[[lang]] <- text
-        
+
       }
-      
+
     }
   }
-  
+
   # Extract DOI URL if the annotation contains adms:Identifier
   if (grepl("adms:Identifier", title)) {
     title_xml <- xml2::read_xml(title)
     doi_url <- xml2::xml_attr(xml2::xml_find_first(title_xml, ".//adms:Identifier"), "rdf:about", xml2::xml_ns(title_xml))
   }
-  
-  
+
+
   metadata <- list(
     Name_EN = name_en,
     Name_DE = name_de,
@@ -209,9 +267,9 @@ extract_metadata <- function(id, agency = "Eurostat") {
     Version = version,
     IsFinal = isFinal
   )
-  
+
   return(metadata)
-  
+
 }
 
 legacy_data_format <- function(x, cols_to_drop = c("DATAFLOW", "LAST UPDATE", "freq")) {
@@ -222,7 +280,7 @@ legacy_data_format <- function(x, cols_to_drop = c("DATAFLOW", "LAST UPDATE", "f
         x[, (cols_to_drop[i]):=NULL]
       }
     }
-    
+
     # Rename columns
     non_legacy_col_name = c("TIME_PERIOD", "OBS_VALUE", "OBS_FLAG")
     legacy_col_name = c("time", "values", "flags")
@@ -231,7 +289,7 @@ legacy_data_format <- function(x, cols_to_drop = c("DATAFLOW", "LAST UPDATE", "f
         data.table::setnames(x, (non_legacy_col_name[i]), (legacy_col_name[i]))
       }
     }
-    
+
   } else {
     x <- x[setdiff(names(x), cols_to_drop)]
     cols_to_rename <- data.frame(non_legacy_col_name = c("TIME_PERIOD", "OBS_VALUE", "OBS_FLAG"),
@@ -260,7 +318,7 @@ build_api_base_uri <- function(agency) {
     comp = "https://webgate.ec.europa.eu/comp/redisstat/api/dissemination",
     empl = "https://webgate.ec.europa.eu/empl/redisstat/api/dissemination",
     grow = "https://webgate.ec.europa.eu/grow/redisstat/api/dissemination")
-  
+
   api_base_uri
 }
 
@@ -278,7 +336,7 @@ build_agencyID <- function(agency) {
     empl = "EMPL",
     grow = "GROW"
   )
-  
+
   agencyID
 }
 
@@ -287,17 +345,17 @@ data_filtering_on_dimension <- function(agency, id, filters) {
   #   api_base_url,
   #   "/sdmx/2.1/datastructure/estat/",
   #   id)
-  
+
   filter_names <- toupper(names(filters))
-  
+
   dimension_df <- get_codelist_id(agency = agency,
                                  id = id)
   dimension_id_upper <- dimension_df$dimension_id_upper
-  
+
   if (!rlang::is_empty(setdiff(filter_names, dimension_id_upper))) {
     stop(paste0("Use valid filter dimensions in the correct order: ", paste(dimension_id, collapse = ".")))
   }
-  
+
   # Assumes that dimensions are listed in the order of their positions
   # If there is an example to the contrary somewhere, this should be changed
   filter_string <- ""
@@ -317,29 +375,29 @@ data_filtering_on_dimension <- function(agency, id, filters) {
 }
 
 get_codelist_id <- function(agency, id) {
-  
+
   api_base_uri <- build_api_base_uri(agency)
-  
+
   data_structure_definition_url <- paste0(
     api_base_uri,
     "/sdmx/2.1/datastructure/ESTAT/",
     id)
-  
+
   dsd <- xml2::read_xml(data_structure_definition_url)
-  
+
   # dimension_id <- xml2::xml_text(xml2::xml_find_all(xml2::xml_find_all(dsd, ".//s:Dimension"), ".//Ref[@class='Codelist']/@id"))
   dimension_id <- xml2::xml_text(xml2::xml_find_all(dsd, ".//s:Dimension/@id"))
   dimension_position <- xml2::xml_text(xml2::xml_find_all(dsd, ".//s:Dimension/@position"))
   codelist_id <- xml2::xml_text(xml2::xml_find_all(dsd, ".//s:Dimension/s:LocalRepresentation/s:Enumeration/Ref/@id"))
   dimension_id_upper <- toupper(dimension_id)
   dimension_df <- data.frame(dimension_position, dimension_id, dimension_id_upper, codelist_id)
-  
+
   dimension_df
 }
 
 # references_resolution <- function(api_base_uri, resource, agencyID, resourceID) {
 #   # resource <- "datastructure"
-#   
+#
 #   url <- paste0(
 #     api_base_uri,
 #     "/sdmx/2.1/",
@@ -349,13 +407,13 @@ get_codelist_id <- function(agency, id) {
 #     "/",
 #     resourceID
 #   )
-#   
+#
 #   parsed <- xml2::read_xml(url)
-#   
+#
 # }
 
 # get_codelist <- function(api_base_uri, id, dimension_id) {
-#   
+#
 # }
 
 label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
@@ -363,18 +421,18 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
   dimension_df <- get_codelist_id(agency = agency, id = id)
   resource <- "codelist"
   lang <- check_lang(lang)
-  
+
   # non-destructive editing
   y <- x
   api_base_uri <- build_api_base_uri(agency)
   agencyID <- build_agencyID(agency)
-  
+
   agencyID <- agencyID
   # data.table objects need different kind of handling
   if (inherits(y, "data.table")) {
     for (i in seq_len(nrow(dimension_df))) {
       resourceID <- dimension_df$codelist_id[[i]]
-      message(paste("Building codelist URL for resourceID:", resourceID))
+      if (verbose) message(paste("Building codelist URL for resourceID:", resourceID))
       codelist_url <- paste0(
         api_base_uri,
         "/sdmx/2.1/",
@@ -392,7 +450,7 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en") {
         column_to_handle <- dimension_df$dimension_id[[i]]
         codes_to_label <- unique(y[[column_to_handle]])
         codelist_subset <- codelist[which(codelist[,1] %in% codes_to_label),]
-        message(paste("Labeling dimension (column):", column_to_handle))
+        if (verbose) message(paste("Labeling dimension (column):", column_to_handle))
         for (j in seq_len(nrow(codelist_subset))) {
           data.table::set(y, i=which(y[[column_to_handle]] == codelist_subset[j,1]), j = column_to_handle, value = codelist_subset[j,2])
         }

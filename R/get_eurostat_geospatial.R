@@ -121,10 +121,10 @@ get_eurostat_geospatial <- function(output_class = "sf",
                                     nuts_level = "all", year = "2016",
                                     cache = TRUE, update_cache = FALSE,
                                     cache_dir = NULL, crs = "4326",
-                                    make_valid = "DEPRECATED", ...) {
+                                    make_valid = "DEPRECATED", verbose = TRUE, ...) {
   # nocov start
   if (!requireNamespace("sf")) {
-    message("'sf' package is required for geospatial functionalities")
+    if (verbose) message("'sf' package is required for geospatial functionalities")
     return(invisible())
   }
   # nocov end
@@ -133,7 +133,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
   # Deprecation messages
   stopifnot(length(output_class) == 1L)
   if (output_class == "spdf") {
-    message("'spdf' output deprecated. Switching to sf output")
+    if (verbose) message("'spdf' output deprecated. Switching to sf output")
     output_class <- "sf"
   }
 
@@ -189,7 +189,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
     }
     # nocov end
 
-    message(paste0(
+    if (verbose) message(paste0(
       "Extracting data using giscoR package, please report issues",
       " on https://github.com/rOpenGov/giscoR/issues"
     ))
@@ -205,7 +205,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
       file.path(tempdir(), "eurostat")
     )) {
       # eurostat not set, using default giscoR cache management
-      message("Cache management as per giscoR. see 'giscoR::gisco_get_nuts()'")
+      if (verbose) message("Cache management as per giscoR. see 'giscoR::gisco_get_nuts()'")
     } else {
       cache_dir <- eur_helper_cachedir(cache_dir)
     }

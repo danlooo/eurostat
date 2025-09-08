@@ -21,6 +21,7 @@ get_eurostat_geospatial(
   cache_dir = NULL,
   crs = "4326",
   make_valid = "DEPRECATED",
+  verbose = TRUE,
   ...
 )
 }
@@ -70,13 +71,16 @@ globally the file would be stored in the \code{\link[=tempdir]{tempdir()}}.}
 default is \code{FALSE}.}
     \item{\code{spatialtype}}{Type of geometry to be returned:
 \itemize{
-\item \strong{"BN"}: Boundaries - \code{LINESTRING} object.
-\item \strong{"LB"}: Labels - \code{POINT} object.
-\item \strong{"RG"}: Regions - \code{MULTIPOLYGON/POLYGON} object.
-}}
+\item \code{"BN"}: Boundaries - \code{LINESTRING} object.
+\item \code{"LB"}: Labels - \code{POINT} object.
+\item \code{"RG"}: Regions - \code{MULTIPOLYGON/POLYGON} object.
+}
+
+\strong{Note that} parameters \code{country}, \code{nuts_level} and \code{nuts_id} would be only
+applied when \code{spatialtype} is \code{"BN"} or \code{"RG"}.}
     \item{\code{country}}{Optional. A character vector of country codes. It could be
 either a vector of country names, a vector of ISO3 country codes or a
-vector of Eurostat country codes. Mixed types (as \code{c("Turkey","US","FRA")})
+vector of Eurostat country codes. Mixed types (as \code{c("Italy","ES","FRA")})
 would not work. See also \code{\link[countrycode:countrycode]{countrycode::countrycode()}}.}
     \item{\code{nuts_id}}{Optional. A character vector of NUTS IDs.}
   }}
