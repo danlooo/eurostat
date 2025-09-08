@@ -12,8 +12,8 @@
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
 #'
 #' @importFrom curl curl_download
-#' @importFrom utils download.file read.csv
-#' @importFrom readr read_tsv cols col_character
+#' @importFrom utils download.file
+#' @importFrom readr read_csv cols col_character
 #' @importFrom data.table fread
 #'
 #' @export
@@ -92,7 +92,8 @@ get_eurostat_sdmx <- function(
     key,
     "?",
     "format=SDMX-CSV",
-    compressed
+    compressed,
+    "&detail=dataonly"
   )
 
   res <- httr::GET(url)
@@ -154,7 +155,7 @@ get_eurostat_sdmx <- function(
 
   curl::curl_download(url = url, destfile = tfile)
 
-  dat <- utils::read.csv(tfile, colClasses = "character", row.names = NULL, check.names = FALSE)
+  dat <- readr::read_csv(tfile, progress = verbose, show_col_types = verbose)
   if (!keepFlags) {
     col_names <- names(dat)
     dat <- dat[setdiff(col_names, "OBS_FLAG")]
