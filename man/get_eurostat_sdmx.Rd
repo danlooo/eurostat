@@ -10,7 +10,7 @@ get_eurostat_sdmx(
   filters = NULL,
   type = "code",
   lang = "en",
-  use.data.table,
+  use.data.table = FALSE,
   agency = "Eurostat",
   compressed = TRUE,
   keepFlags = FALSE,
@@ -50,8 +50,9 @@ labels as values and codes as names.}
 \item{lang}{2-letter language code, default is "\code{en}" (English), other
 options are "\code{fr}" (French) and "\code{de}" (German). Used for labeling datasets.}
 
-\item{use.data.table}{Use faster data.table functions? Default is FALSE.
-On Windows requires that RTools is installed.}
+\item{use.data.table}{Use data.table to process files? Default is FALSE.
+If data.table is used, data will be downloaded as a TSV file and
+processed using \code{\link[=tidy_eurostat]{tidy_eurostat()}}}
 
 \item{agency}{Either "Eurostat" (default), "Eurostat_comext"
 (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"}

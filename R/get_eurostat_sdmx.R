@@ -1,20 +1,30 @@
 #' @title Get Eurostat Data from SDMX 2.1 API
 #'
 #' @description
-#' Download data sets from Eurostat \url{https://ec.europa.eu/eurostat}
+#' `r lifecycle::badge('experimental')`
+#' 
+#' Download data sets from Eurostat using the same logic as `get_eurostat()`
+#' function.
 #'
 #' @details
-#' Download data from SDMX API
+#' This function is experimental because while it works as intended and is
+#' useful in the same way as other get_ functions in the package, we would
+#' like to test it for a while and listen to user feedback before deciding on
+#' what is the best way to interact with SDMX APIs.
 #'
 #' @inheritParams get_eurostat
 #' @inheritParams get_eurostat_async
 #' @param agency Either "Eurostat" (default), "Eurostat_comext"
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
+#' @param use.data.table Use data.table to process files? Default is FALSE.
+#' If data.table is used, data will be downloaded as a TSV file and
+#' processed using [tidy_eurostat()]
 #'
 #' @importFrom curl curl_download
 #' @importFrom utils download.file
-#' @importFrom readr read_csv cols col_character
+#' @importFrom readr read_csv read_tsv cols col_character
 #' @importFrom data.table fread
+#' @importFrom httr2 request req_url_path_append req_url_query req_perform
 #'
 #' @export
 get_eurostat_sdmx <- function(
@@ -23,7 +33,7 @@ get_eurostat_sdmx <- function(
     filters = NULL,
     type = "code",
     lang = "en",
-    use.data.table,
+    use.data.table = FALSE,
     agency = "Eurostat",
     compressed = TRUE,
     keepFlags = FALSE,
@@ -47,25 +57,8 @@ get_eurostat_sdmx <- function(
 
   agency <- tolower(agency)
 
-  # agencyID <- switch(
-  #   agency,
-  #   eurostat = "ESTAT",
-  #   eurostat_comext = "ESTAT",
-  #   comp = "COMP",
-  #   empl = "EMPL",
-  #   grow = "GROW"
-  # )
-
   api_base_uri <- build_api_base_uri(agency)
   agencyID <- build_agencyID(agency)
-
-  # api_base_uri <- switch(
-  #   agency,
-  #   eurostat = "https://ec.europa.eu/eurostat/api/dissemination",
-  #   eurostat_comext = "https://ec.europa.eu/eurostat/api/comext/dissemination",
-  #   comp = "https://webgate.ec.europa.eu/comp/redisstat/api/dissemination",
-  #   empl = "https://webgate.ec.europa.eu/empl/redisstat/api/dissemination",
-  #   grow = "https://webgate.ec.europa.eu/grow/redisstat/api/dissemination")
 
   if (is.null(api_base_uri)) stop("Use valid agency")
 
@@ -78,90 +71,94 @@ get_eurostat_sdmx <- function(
   # The identifier of the dataflow reference
   flowRef <- id
   key <- data_filtering_on_dimension(agency, id, filters)
-  compressed_flag <- compressed
-  compressed <- if (compressed_flag) "&compressed=true" else "&compressed=false"
+  compressed_string <- if (compressed) "&compressed=true" else "&compressed=false"
 
-
-  url <- paste0(
-    api_base_uri,
-    "/sdmx/2.1/",
-    resource,
-    "/",
-    flowRef,
-    "/",
-    key,
-    "?",
-    "format=SDMX-CSV",
-    compressed,
-    "&detail=dataonly"
-  )
-
-  res <- httr::GET(url)
-  #print(res)
-  ctype <- httr::headers(res)[["content-type"]]
-  #print(ctype)
-
-  if (grepl("xml", ctype, ignore.case = TRUE)) {
-    content <- httr::content(res, as = "parsed", encoding = "UTF-8")
-    async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
-    if (!is.na(async_id) && nzchar(async_id)) {
-      if (verbose) message("Async mode triggered. Downloading via async ID: ", async_id)
-      return(get_eurostat_async(
-        id = async_id,
-        time_format = time_format,
-        type = type,
-        lang = lang,
-        use.data.table = use.data.table,
-        agency = agency,
-        keepFlags = keepFlags,
-        legacy.data.output = legacy.data.output,
-        wait = wait,
-        max_wait = max_wait,
-        compressed = compressed_flag
-      ))
-    } else {
-      message(" Response was XML, but no async <id> found. Treating as sync (unexpected).")
-    }
-  } else if (grepl("csv", ctype, ignore.case = TRUE)) {
-    if (verbose) message("Synchronous mode: CSV data returned directly.")
+  if (use.data.table) {
+    tfile <- tempfile()
+    on.exit(unlink(tfile))
+    
+    httr2::request(api_base_uri) %>% 
+      httr2::req_url_path_append("sdmx", "2.1", resource, id, key) %>%  
+      httr2::req_url_query(format = "TSV", compressed = compressed, detail = "dataonly") %>% 
+      httr2::req_perform(path = tfile)
+    
+    dat <- readr::read_tsv(tfile, progress = verbose, show_col_types = verbose)
+    dat2 <- data.table::fread(tfile, na.strings = c(":"), verbose = verbose)
+    # Columns containing NA's don't play well with data.table::melt in 
+    # tidy_eurostat
+    # This turns logical columns (containing NA's) into integers (NA_integer_)
+    offending_cols <- names(dat2[, .SD, .SDcols = anyNA])
+    dat2 <- dat2[ , (offending_cols) := lapply(.SD, as.integer), .SDcols = offending_cols]
+    
+    dat <- tidy_eurostat(dat2, use.data.table = use.data.table)
+    
+    return(dat)
   } else {
-    if (verbose) message("Unexpected content type: ", ctype)
+    res <- httr2::request(api_base_uri) %>% 
+      httr2::req_url_path_append("sdmx", "2.1", resource, id, key) %>%  
+      httr2::req_url_query(format = "SDMX-CSV", compressed = compressed, detail = "dataonly")
   }
 
+  # url <- paste0(
+  #       api_base_uri,
+  #       "/sdmx/2.1/",
+  #       resource,
+  #       "/",
+  #       flowRef,
+  #       "/",
+  #       key,
+  #       "?",
+  #       "format=SDMX-CSV",
+  #       compressed,
+  #       "&detail=dataonly"
+  #     )
+  # res_old <- httr::GET(url)
+  # res <- res %>% 
+  #   req_headers()
+  # 
+  # ctype_old <- httr::headers(res_old)[["content-type"]]
+  # ctype <- res %>% 
+  #   httr2::req_headers()
+  
+  #print(ctype)
 
-  # content <- httr::content(res, as = "parsed", encoding = "UTF-8")
-  #
-  # # Check for async ID
-  # async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
-  #
-  # if (!is.na(async_id) && nzchar(async_id)) {
-  #   message("Async mode triggered. Downloading via async ID: ", async_id)
-  #   return(get_eurostat_async(
-  #     id = async_id,
-  #     time_format = time_format,
-  #     type = type,
-  #     lang = lang,
-  #     use.data.table = use.data.table,
-  #     agency = agency,
-  #     keepFlags = keepFlags,
-  #     legacy.data.output = legacy.data.output,
-  #     wait = wait,
-  #     max_wait = max_wait
-  #   ))
+  # if (grepl("xml", ctype, ignore.case = TRUE)) {
+  #   content <- httr::content(res, as = "parsed", encoding = "UTF-8")
+  #   async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
+  #   if (!is.na(async_id) && nzchar(async_id)) {
+  #     if (verbose) message("Async mode triggered. Downloading via async ID: ", async_id)
+  #     return(get_eurostat_async(
+  #       id = async_id,
+  #       time_format = time_format,
+  #       type = type,
+  #       lang = lang,
+  #       use.data.table = use.data.table,
+  #       agency = agency,
+  #       keepFlags = keepFlags,
+  #       legacy.data.output = legacy.data.output,
+  #       wait = wait,
+  #       max_wait = max_wait,
+  #       compressed = compressed_flag
+  #     ))
+  #   } else {
+  #     message(" Response was XML, but no async <id> found. Treating as sync (unexpected).")
+  #   }
+  # } else if (grepl("csv", ctype, ignore.case = TRUE)) {
+  #   if (verbose) message("Synchronous mode: CSV data returned directly.")
+  # } else {
+  #   if (verbose) message("Unexpected content type: ", ctype)
   # }
 
   tfile <- tempfile()
   on.exit(unlink(tfile))
-
-  curl::curl_download(url = url, destfile = tfile)
+  
+  httr2::req_perform(res, path = tfile)
 
   dat <- readr::read_csv(tfile, progress = verbose, show_col_types = verbose)
   if (!keepFlags) {
     col_names <- names(dat)
     dat <- dat[setdiff(col_names, "OBS_FLAG")]
   }
-
-  # return(references_resolution(api_base_uri, resource = "datastructure", agencyID = agencyID, resourceID = id))
 
   if (identical(type, "label")){
     dat <- label_eurostat_sdmx(x = dat,

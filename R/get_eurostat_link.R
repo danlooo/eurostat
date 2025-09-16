@@ -1,5 +1,8 @@
-#' Download Eurostat Data from API Link (robust, no list-columns, async-aware)
+#' @title Download Eurostat Data from API Link (robust, no list-columns, async-aware)
 #'
+#' @description
+#' `r lifecycle::badge('experimental')`
+#' 
 #' Supports TSV, SDMX-CSV, SDMX-ML, JSON-stat, and Spreadsheet (.xlsx) formats.
 #' Always returns a tibble where possible.
 #'
@@ -10,6 +13,8 @@
 #' @importFrom purrr map_dfr
 #' @importFrom utils read.delim read.csv
 #' @importFrom stats setNames
+#' @importFrom httr2 request req_user_agent req_perform resp_check_status
+#' @importFrom httr2 resp_body_raw resp_content_type url_parse
 #' @export
 get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   if (!is.character(link) || length(link) != 1) stop("Provide a valid Eurostat link.")
@@ -38,17 +43,19 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
 
     raw
   }
+  
+  url_parsed <- httr2::url_parse(link)
 
   # Comext DS-prefixed datasets must use correct base
   if (grepl("/comext/dissemination", link)) {
-    dataset_match <- regmatches(link, regexpr("/ds-[0-9]+", tolower(link)))
-    if (length(dataset_match) == 0) {
+    dataset_match <- grepl("/ds-[0-9]+", url_parsed$path)
+    if (!dataset_match) {
       stop("Comext API requires DS-prefixed dataset codes (e.g., ds-056120).")
     }
   }
 
   # TSV format
-  if (grepl("format=TSV", link, ignore.case = TRUE) || grepl("\\.tsv", link, ignore.case = TRUE)) {
+  if ("format" %in% attributes(url_parsed$query) && url_parsed$query$format == "TSV") {
     if (verbose) message("Downloading TSV...")
     text_content <- download_content(link)
 
@@ -75,8 +82,8 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   }
 
   # SDMX-CSV
-  if (grepl("format=csvdata", link, ignore.case = TRUE) || grepl("\\.csv", link, ignore.case = TRUE)) {
-    if (verbose) message("Downloading SDMX-CSV 1.0...")
+  if ("format" %in% attributes(url_parsed$query)$names && url_parsed$query$format == "csvdata") {
+    if (verbose) message(paste0("Downloading SDMX-CSV ", url_parsed$query$formatVersion, "..."))
     text_content <- download_content(link)
     lines <- strsplit(text_content, "\n", fixed = TRUE)[[1]]
     data_start <- which(sapply(lines, function(l) {
@@ -89,9 +96,9 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   }
 
   # SDMX-ML 2.1 StructureSpecific
-  if (grepl("format=structurespecificdata", link, ignore.case = TRUE) && grepl("formatVersion=2.1", link, ignore.case = TRUE)) {
+  if ("format" %in% attributes(url_parsed$query)$names && url_parsed$query$format == "structurespecificdata") {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    if (verbose) message("Downloading SDMX-ML 2.1 StructureSpecific...")
+    if (verbose) message(paste("Downloading SDMX-ML", url_parsed$query$formatVersion, url_parsed$query$format, "..."))
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -107,9 +114,9 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   }
 
   # SDMX-ML 2.1 GenericData
-  if (grepl("format=genericdata", link, ignore.case = TRUE)) {
+  if ("format" %in% attributes(url_parsed$query)$names && url_parsed$query$format == "genericdata") {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    if (verbose) message("Downloading SDMX-ML 2.1 GenericData...")
+    if (verbose) message(paste("Downloading SDMX-ML", url_parsed$query$formatVersion, url_parsed$query$format, "..."))
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -128,7 +135,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   # SDMX-ML 3.0 StructureSpecific
   if (grepl("/sdmx/3.0/data", link) && (grepl("\\.xml", link, ignore.case = TRUE) || !grepl("format=", link, ignore.case = TRUE))) {
     if (!requireNamespace("xml2", quietly = TRUE)) stop("Please install 'xml2' for XML parsing.")
-    if (verbose) message("Downloading SDMX-ML 3.0 StructureSpecific...")
+    if (verbose) message(paste("Downloading SDMX-ML", url_parsed$query$formatVersion, url_parsed$query$format, "..."))
     xml_text <- download_content(link)
     doc <- xml2::read_xml(xml_text)
     ns <- xml2::xml_ns(doc)
@@ -154,7 +161,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
   }
 
   # JSON-stat handling
-  if (grepl("format=JSON", link, ignore.case = TRUE)) {
+  if ("format" %in% attributes(url_parsed$query)$names && url_parsed$query$format == "JSON") {
     if (verbose) message("Downloading JSON-stat 2.0...")
     json_data <- jsonlite::fromJSON(link)
     value_data <- json_data$value

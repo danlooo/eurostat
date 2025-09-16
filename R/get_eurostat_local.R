@@ -1,5 +1,8 @@
 #' @title Read Local SDMX-CSV files
-#' @description Read compressed or uncompressed SDMX-CSV files
+#' @description 
+#' `r lifecycle::badge('experimental')`
+#' Read compressed or uncompressed SDMX-CSV files
+#' 
 #' @details
 #' This implementation is experimental. It uses only data.table methods to read
 #' and wrangle data files.
