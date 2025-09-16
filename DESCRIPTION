@@ -54,14 +54,14 @@ Imports:
     tibble,
     tidyr (>= 1.0.0),
     xml2,
-    data.table (>= 1.14.8),
-    lifecycle
+    data.table (>= 1.14.8)
 Suggests:
     giscoR,
     knitr,
     rmarkdown,
     sf,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    lifecycle
 VignetteBuilder: 
     knitr
 Config/Needs/website: ggplot2, tmap, styler, sessioninfo,
