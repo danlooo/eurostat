@@ -95,10 +95,10 @@ knitr::kable(head(passengers))
 | title | code | type | last.update.of.data | last.table.structure.change | data.start | data.end | values | hierarchy |
 |:---|:---|:---|:---|:---|:---|:---|---:|---:|
 | Air passenger transport - ENP-South countries | enps_avia_pa | dataset | 12.05.2025 | 12.05.2025 | 2005 | 2023 | 480 | 6 |
-| Air passenger transport by type of schedule, transport coverage and country | avia_paoc | dataset | 18.08.2025 | 18.08.2025 | 1993 | 2025-Q2 | 2519348 | 5 |
-| Air passenger transport by type of schedule, transport coverage and main airports | avia_paoa | dataset | 18.08.2025 | 18.08.2025 | 1993 | 2025-Q2 | 20557100 | 5 |
-| Air passenger transport between reporting and partner countries by type of schedule | avia_paocc | dataset | 18.08.2025 | 18.08.2025 | 1993 | 2025-Q2 | 10484757 | 5 |
-| Air passenger transport between main airports and partner reporting countries | avia_paoac | dataset | 18.08.2025 | 18.08.2025 | 1993 | 2025-Q2 | 20133126 | 5 |
+| Air passenger transport by type of schedule, transport coverage and country | avia_paoc | dataset | 15.09.2025 | 15.09.2025 | 1993 | 2025-Q2 | 2524910 | 5 |
+| Air passenger transport by type of schedule, transport coverage and main airports | avia_paoa | dataset | 15.09.2025 | 15.09.2025 | 1993 | 2025-Q2 | 20609595 | 5 |
+| Air passenger transport between reporting and partner countries by type of schedule | avia_paocc | dataset | 15.09.2025 | 15.09.2025 | 1993 | 2025-Q2 | 10518367 | 5 |
+| Air passenger transport between main airports and partner reporting countries | avia_paoac | dataset | 15.09.2025 | 15.09.2025 | 1993 | 2025-Q2 | 20189218 | 5 |
 | Air passenger transport by aircraft model, distance bands and transport coverage | avia_paodis | dataset | 16.06.2025 | 06.12.2024 | 2008 | 2023 | 852432 | 5 |
 
 See the
@@ -127,21 +127,51 @@ Contributions are very welcome:
 
 ### Acknowledgements
 
-**Kindly cite this package** by citing the following R Journal article:
+**Kindly cite this work** as follows:
 
-[Lahti L.](https://github.com/antagomir), Huovari J., Kainu M., and
-Biecek P. (2017). Retrieval and analysis of Eurostat open data with the
-eurostat package. [The R Journal 9(1),
-pp. 385-392](https://journal.r-project.org/archive/2017/RJ-2017-019/index.html).
-doi: [10.32614/RJ-2017-019](https://doi.org/10.32614/RJ-2017-019).
+``` text
+print(citation("eurostat"), bibtex = TRUE)
+Kindly cite this package by citing the following R Journal article:
+
+  Lahti L., Huovari J., Kainu M., and Biecek P. (2017). Retrieval and
+  analysis of Eurostat open data with the eurostat package. The R
+  Journal 9(1), pp. 385-392. doi: 10.32614/RJ-2017-019
+
+A BibTeX entry for LaTeX users is
+
+  @Article{10.32614/RJ-2017-019,
+    title = {Retrieval and Analysis of Eurostat Open Data with the eurostat Package},
+    author = {Leo Lahti and Janne Huovari and Markus Kainu and Przemyslaw Biecek},
+    journal = {The R Journal},
+    volume = {9},
+    number = {1},
+    pages = {385--392},
+    year = {2017},
+    doi = {10.32614/RJ-2017-019},
+    url = {https://doi.org/10.32614/RJ-2017-019},
+  }
 
 In addition, please provide a citation to the specific software version
 used:
 
-Lahti, L., Huovari J., Kainu M., Biecek P., Hernangomez D., Antal D.,
-and Kantanen P. (2023). eurostat: Tools for Eurostat Open Data
-\[Computer software\]. R package version 4.0.0.9003.
-<https://github.com/rOpenGov/eurostat>
+  Lahti L, Huovari J, Kainu M, Biecek P, Hernangomez D, Antal D,
+  Kantanen P (2025). "eurostat: Tools for Eurostat Open Data."
+  doi:10.32614/CRAN.package.eurostat
+  <https://doi.org/10.32614/CRAN.package.eurostat>, R package version
+  4.1.0.9003, <https://github.com/rOpenGov/eurostat>.
+
+A BibTeX entry for LaTeX users is
+
+  @Misc{R-eurostat,
+    title = {eurostat: Tools for Eurostat Open Data},
+    doi = {10.32614/CRAN.package.eurostat},
+    author = {Leo Lahti and Janne Huovari and Markus Kainu and Przemyslaw Biecek and Diego Hernangomez and Daniel Antal and Pyry Kantanen},
+    url = {https://github.com/rOpenGov/eurostat},
+    type = {Computer software},
+    year = {2025},
+    note = {R package version 4.1.0.9003},
+  }
+```
 
 We are grateful to all
 [contributors](https://github.com/ropengov/eurostat/graphs/contributors),
