@@ -27,7 +27,7 @@ get_eurostat_link <- function(link, destfile = NULL, verbose = TRUE) {
 
   download_content <- function(link) {
     resp <- httr2::request(link) %>% 
-      httr2::req_user_agent("eurostat-r-client") %>% 
+      httr2::req_user_agent("https://github.com/rOpenGov/eurostat") %>% 
       httr2::req_perform()
 
     httr2::resp_check_status(resp)

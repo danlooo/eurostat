@@ -1,6 +1,7 @@
 #' @title Get Asynchronous Eurostat SDMX Data by ID
 #'
 #' @description
+#' `r lifecycle::badge('experimental')`
 #' Polls Eurostat's async API for the status of a submitted request and downloads the data when available.
 #'
 #' @inheritParams get_eurostat_sdmx
@@ -10,8 +11,11 @@
 #' @param compressed Logical. Download data in compressed format? Default is TRUE.
 #' @inheritParams get_eurostat
 #' @importFrom data.table %chin%
-#' @importFrom httr GET content status_code
+#' @importFrom httr2 request req_user_agent req_perform resp_body_xml
+#' @importFrom httr2 resp_status resp_body_raw
 #' @importFrom utils unzip
+#' @importFrom xml2 xml_find_first
+#' @importFrom stats setNames
 #'
 #' @return A data.frame containing the SDMX-CSV data.
 #'
@@ -50,11 +54,13 @@ get_eurostat_async <- function(
 
   status_check <- function(t) {
     Sys.sleep(wait)
-    res <- httr::GET(status_url)
-    content <- httr::content(res, as = "parsed", encoding = "UTF-8")
+    resp <- httr2::request(status_url) %>% 
+      httr2::req_user_agent("https://github.com/rOpenGov/eurostat") %>% 
+      httr2::req_perform()
+    content <- httr2::resp_body_xml(resp)
     xml2::xml_text(xml2::xml_find_first(content, ".//status"))
   }
-
+  
   statuses <- vapply(wait_times, status_check, FUN.VALUE = character(1))
 
   status_flags <- stats::setNames(seq_along(statuses), statuses)
@@ -74,17 +80,17 @@ get_eurostat_async <- function(
       # Enhanced download with retries and HTTP checks
       download_attempt <- function(url, destfile, retries = 3, delay = 5) {
         for (i in seq_len(retries)) {
-          res <- httr::GET(url)
-          if (httr::status_code(res) == 200) {
-            writeBin(httr::content(res, "raw"), destfile)
+          resp <- httr2::request(url) %>% httr2::req_perform()
+          if (httr2::resp_status(resp) == 200) {
+            writeBin(httr2::resp_body_raw(resp), destfile)
             return(TRUE)
           }
           if (i < retries) {
-            if (verbose) message("Download failed (HTTP ", httr::status_code(res), "). Retrying...")
+            if (verbose) message("Download failed (HTTP ", httr2::resp_status(resp), "). Retrying...")
             Sys.sleep(delay)
           }
         }
-        stop("Download failed after ", retries, " attempts. Last HTTP status: ", httr::status_code(res))
+        stop("Download failed after ", retries, " attempts. Last HTTP status: ", httr2::resp_status(resp))
       }
 
       tryCatch(

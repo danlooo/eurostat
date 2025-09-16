@@ -73,5 +73,6 @@ conventions of eurostat package version 3.7.x and earlier.}
 A data.frame containing the SDMX-CSV data.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Polls Eurostat's async API for the status of a submitted request and downloads the data when available.
 }

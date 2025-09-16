@@ -130,10 +130,6 @@ get_eurostat_json <- function(id,
 
   # construct url
   url <- eurostat_json_url(id = id, filters = filters, lang = lang)
-  # set user agent with version
-  # ua <- httr::user_agent(paste0("eurostat_",
-  # packageDescription("eurostat", fields = "Version")))
-  # ua <- httr::user_agent("https://github.com/rOpenGov/eurostat")
   
   if (proxy == TRUE) {
     # Check if "..." has arguments needed for proxy
@@ -165,13 +161,6 @@ get_eurostat_json <- function(id,
     httr2::req_retry(max_tries = 3, max_seconds = 60) %>% 
     httr2::req_error(is_error = function(resp) FALSE) %>% 
     httr2::req_perform()
-
-  # RETRY GET 3 times
-  # resp <- httr::RETRY(verb = "GET",
-  #                     url = url,
-  #                     times = 3,
-  #                     terminate_on = c(404),
-  #                     ua)
 
   # Source: httr vignette "Best practices for API packages" [httr_vignette]
   if (httr2::resp_content_type(resp) != "application/json") {
@@ -226,8 +215,6 @@ get_eurostat_json <- function(id,
                msg)
     )
   }
-
-  #status <- httr::status_code(resp)
 
   # check status and get json
   jdat <- result

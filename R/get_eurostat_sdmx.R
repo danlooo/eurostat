@@ -99,56 +99,6 @@ get_eurostat_sdmx <- function(
       httr2::req_url_query(format = "SDMX-CSV", compressed = compressed, detail = "dataonly")
   }
 
-  # url <- paste0(
-  #       api_base_uri,
-  #       "/sdmx/2.1/",
-  #       resource,
-  #       "/",
-  #       flowRef,
-  #       "/",
-  #       key,
-  #       "?",
-  #       "format=SDMX-CSV",
-  #       compressed,
-  #       "&detail=dataonly"
-  #     )
-  # res_old <- httr::GET(url)
-  # res <- res %>% 
-  #   req_headers()
-  # 
-  # ctype_old <- httr::headers(res_old)[["content-type"]]
-  # ctype <- res %>% 
-  #   httr2::req_headers()
-  
-  #print(ctype)
-
-  # if (grepl("xml", ctype, ignore.case = TRUE)) {
-  #   content <- httr::content(res, as = "parsed", encoding = "UTF-8")
-  #   async_id <- xml2::xml_text(xml2::xml_find_first(content, ".//id"))
-  #   if (!is.na(async_id) && nzchar(async_id)) {
-  #     if (verbose) message("Async mode triggered. Downloading via async ID: ", async_id)
-  #     return(get_eurostat_async(
-  #       id = async_id,
-  #       time_format = time_format,
-  #       type = type,
-  #       lang = lang,
-  #       use.data.table = use.data.table,
-  #       agency = agency,
-  #       keepFlags = keepFlags,
-  #       legacy.data.output = legacy.data.output,
-  #       wait = wait,
-  #       max_wait = max_wait,
-  #       compressed = compressed_flag
-  #     ))
-  #   } else {
-  #     message(" Response was XML, but no async <id> found. Treating as sync (unexpected).")
-  #   }
-  # } else if (grepl("csv", ctype, ignore.case = TRUE)) {
-  #   if (verbose) message("Synchronous mode: CSV data returned directly.")
-  # } else {
-  #   if (verbose) message("Unexpected content type: ", ctype)
-  # }
-
   tfile <- tempfile()
   on.exit(unlink(tfile))
   
