@@ -62,6 +62,7 @@ Default is FALSE. If TRUE, the object will try to emulate the naming
 conventions of eurostat package version 3.7.x and earlier.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Read compressed or uncompressed SDMX-CSV files
 }
 \details{

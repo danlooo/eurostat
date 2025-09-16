@@ -17,6 +17,8 @@ get_eurostat_link(link, destfile = NULL, verbose = TRUE)
 Tibble for all supported formats
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
 Supports TSV, SDMX-CSV, SDMX-ML, JSON-stat, and Spreadsheet (.xlsx) formats.
 Always returns a tibble where possible.
 }

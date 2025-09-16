@@ -78,8 +78,14 @@ conventions of eurostat package version 3.7.x and earlier.}
 \item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 }
 \description{
-Download data sets from Eurostat \url{https://ec.europa.eu/eurostat}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+Download data sets from Eurostat using the same logic as \code{get_eurostat()}
+function.
 }
 \details{
-Download data from SDMX API
+This function is experimental because while it works as intended and is
+useful in the same way as other get_ functions in the package, we would
+like to test it for a while and listen to user feedback before deciding on
+what is the best way to interact with SDMX APIs.
 }
