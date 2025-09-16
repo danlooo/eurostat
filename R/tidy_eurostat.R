@@ -107,8 +107,8 @@ tidy_eurostat <- function(dat,
     dat <- data.table::melt(data = dat,
                             measure.vars = setdiff(names(dat), cnames1),
                             variable.name = cnames2,
-                            value.name = "values") %>% 
-      na.omit(cols = "values")
+                            value.name = "values", na.rm = TRUE)# %>% 
+      # stats::na.omit(cols = "values")
     
     # NEW CODE: data.table
     # should be using S3 method for data.table here...
