@@ -130,28 +130,195 @@ get_eurostat_sdmx <- function(
 
 }
 
-extract_metadata <- function(id, agency = "Eurostat") {
+get_sdmx_codelist <- function(codelist_id, agency = "Eurostat", type = "list", lang = NULL) {
+  lang <- eurostat:::check_lang(lang)
+  
+  api_base_uri <- build_api_base_uri(agency)
+  
+  xml_url <- paste0(
+    api_base_uri,
+    "/sdmx/2.1/codelist/estat/",
+    codelist_id)
+  
+  xml_object <- xml2::read_xml(xml_url)
+  
+  if (identical(type, "raw")) {
+    return(xml_object)
+  } 
+  
+  namespaces <- xml2::xml_ns(xml_object)
+  
+  codelists <- xml2::xml_find_first(xml_object, ".//s:Codelists", namespaces)
+  
+  code_nodes <- xml2::xml_find_all(codelists, ".//s:Code", namespaces)
+  
+  id <- c()
+  name <- c()
+  
+  for (node in code_nodes) {
+    id <- c(id, xml2::xml_attr(node, "id"))
+    name <- c(name, xml2::xml_text(xml2::xml_find_first(node, sprintf(".//c:Name[@xml:lang='%s']", lang))))
+  }
+  
+  df <- data.frame(
+    id = id,
+    name = name
+  )
+  
+  return(df)
+}
+
+get_sdmx_conceptscheme <- function(id, agency = "Eurostat", type = "list", lang = NULL) {
+  
+  lang <- eurostat:::check_lang(lang)
+  
+  api_base_uri <- build_api_base_uri(agency)
+  
+  xml_url <- paste0(
+    api_base_uri,
+    "/sdmx/2.1/conceptscheme/estat/",
+    id)
+  
+  xml_object <- xml2::read_xml(xml_url)
+  
+  if (identical(type, "raw")) {
+    return(xml_object)
+  } 
+  
+  namespaces <- xml2::xml_ns(xml_object)
+  
+  # Continue with dimensions and concept extraction
+  data_structure_components <- xml2::xml_find_first(xml_object, ".//s:Concepts", namespaces)
+  
+  concept_nodes <- xml2::xml_find_all(data_structure_components, ".//s:Concept", namespaces)
+  
+  # metadata <- xml2::as_list(concept_nodes)
+  
+  id <- c()
+  urn <- c()
+  name <- c()
+  core_representation <- c()
+  version <- c()
+  
+  for (node in concept_nodes) {
+    id <- c(id, xml2::xml_attr(node, "id"))
+    urn <- c(urn, xml2::xml_attr(node, "urn"))
+    name <- c(name, xml2::xml_text(xml2::xml_find_first(node, sprintf(".//c:Name[@xml:lang='%s']", lang))))
+    if (is.na(xml2::xml_attr(xml2::xml_find_first(node, ".//Ref"), "class"))) {
+      core_representation <- c(core_representation, xml2::xml_attr(xml2::xml_find_first(node, ".//s:TextFormat"), "textType"))
+    } else {
+      core_representation <- c(core_representation, xml2::xml_attr(xml2::xml_find_first(node, ".//Ref"), "class"))
+    }
+    version <- c(version, xml2::xml_attr(xml2::xml_find_first(node, ".//Ref"), "version"))
+  }
+  
+  metadata_returnable <- data.frame(
+    id = id,
+    urn = urn, 
+    name = name,
+    core_representation = core_representation,
+    version = version
+  )
+  
+  return(metadata_returnable)
+}
+
+get_sdmx_dsd <- function(id, agency = "Eurostat", type = "list", lang = NULL) {
+  api_base_uri <- build_api_base_uri(agency)
+  
+  dsd_url <- paste0(
+    api_base_uri,
+    "/sdmx/2.1/datastructure/estat/",
+    id)
+  
+  xml_object <- xml2::read_xml(dsd_url)
+  
+  if (identical(type, "raw")) {
+    return(xml_object)
+  } 
+  
+  # Define namespaces
+  namespaces <- xml2::xml_ns(xml_object)
+  
+  # Extract Header information
+  header <- xml2::xml_find_first(xml_object, ".//m:Header", namespaces)
+  header_id <- xml2::xml_text(xml2::xml_find_first(header, ".//m:ID", namespaces))
+  prepared <- substr(xml2::xml_text(xml2::xml_find_first(header, ".//m:Prepared", namespaces)),1,10)
+  sender_id <- xml2::xml_attr(xml2::xml_find_first(header, ".//m:Sender", namespaces), "id")
+  
+  
+  # Continue with dimensions and concept extraction
+  data_structure_components <- xml2::xml_find_first(xml_object, ".//s:DataStructureComponents", namespaces)
+  
+  dimension_nodes <- xml2::xml_find_all(data_structure_components, ".//s:Dimension | .//s:TimeDimension | .//s:AttributeList/s:Attribute | .//s:MeasureList/s:PrimaryMeasure", namespaces)
+  
+  metadata_returnable <- list()
+  
+  metadata <- xml2::as_list(dimension_nodes)
+  
+  id <- c()
+  urn <- c()
+  concept_identity_class <- c()
+  local_representation <- c()
+  local_representation_version <- c()
+  
+  for (node in dimension_nodes) {
+    id <- c(id, xml2::xml_attr(node, "id"))
+    urn <- c(urn, xml2::xml_attr(node, "urn"))
+    concept_identity_class <- c(concept_identity_class, xml2::xml_attr(xml_find_first(node, ".//Ref"), "class"))
+    if (is.na(xml2::xml_attr(xml2::xml_find_first(node, ".//Ref"), "class"))) {
+      local_representation <- c(local_representation, xml2::xml_attr(xml2::xml_find_first(node, ".//s:TextFormat"), "textType"))
+    } else {
+      local_representation <- c(local_representation, xml2::xml_attr(xml2::xml_find_first(node, ".//Ref"), "class"))
+    }
+    local_representation_version <- c(local_representation_version, xml2::xml_attr(xml2::xml_find_first(node, ".//s:Enumeration/Ref"), "version"))
+  }
+  
+  metadata_returnable <- data.frame(
+    id = id,
+    urn = urn, 
+    concept_identity_class = concept_identity_class,
+    local_representation = local_representation,
+    local_representation_version = local_representation_version
+  )
+  
+  return(metadata_returnable)
+}
+
+get_sdmx_dataflow <- function(id, agency = "Eurostat", type = "list", lang = NULL) {
 
   api_base_uri <- build_api_base_uri(agency)
 
-  data_structure_definition_url <- paste0(
+  dataflow_url <- paste0(
     api_base_uri,
     "/sdmx/2.1/dataflow/estat/",
     id)
+  
+  # With DSD
+  # dataflow_url <- paste0(
+  #   api_base_uri,
+  #   "/sdmx/2.1/dataflow/estat/",
+  #   id,
+  #   "/",
+  #  "?references=children")
 
-  dsd_xml <- xml2::read_xml(data_structure_definition_url)
+  xml_object <- xml2::read_xml(dataflow_url)
+  
+  if (identical(type, "raw")) {
+    return(xml_object)
+  } 
 
   # Define namespaces
-  namespaces <- xml2::xml_ns(dsd_xml)
+  namespaces <- xml2::xml_ns(xml_object)
 
   # Extract Header information
-  header <- xml2::xml_find_first(dsd_xml, ".//m:Header", namespaces)
+  header <- xml2::xml_find_first(xml_object, ".//m:Header", namespaces)
   header_id <- xml2::xml_text(xml2::xml_find_first(header, ".//m:ID", namespaces))
   prepared <- substr(xml2::xml_text(xml2::xml_find_first(header, ".//m:Prepared", namespaces)),1,10)
   sender_id <- xml2::xml_attr(xml2::xml_find_first(header, ".//m:Sender", namespaces), "id")
 
   # Continue with dataflow and annotations extraction
-  dataflow <- xml2::xml_find_first(dsd_xml, ".//s:Dataflow", namespaces)
+  dataflow <- xml2::xml_find_first(xml_object, ".//s:Dataflow", namespaces)
   dataflow_id <- xml2::xml_attr(dataflow, "id")
   urn <- xml2::xml_attr(dataflow, "urn")
   agencyID <- xml2::xml_attr(dataflow, "agencyID")
@@ -162,6 +329,11 @@ extract_metadata <- function(id, agency = "Eurostat") {
   name_de <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='de']", namespaces))
   name_en <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='en']", namespaces))
   name_fr <- xml2::xml_text(xml2::xml_find_first(dataflow, ".//c:Name[@xml:lang='fr']", namespaces))
+  if (!is.null(lang)) {
+    name <- xml2::xml_text(xml2::xml_find_first(dataflow, sprintf(".//c:Name[@xml:lang='%s']", lang), namespaces))
+  } else {
+    name <- name_en
+  }
 
   source_institutions <- list()
   doi_details <- NULL
@@ -181,40 +353,48 @@ extract_metadata <- function(id, agency = "Eurostat") {
     } else if (type == "UPDATE_DATA") {
       update_data_timestamp <- title
     } else if(type == "SOURCE_INSTITUTIONS"){
-      for (text_node in texts_nodes) {
-        lang <- xml2::xml_attr(text_node, "xml:lang")
-        text <- xml2::xml_text(text_node)
-        source_institutions[[lang]] <- text
-
+      if (!is.null(lang)) {
+        source_institutions <- xml2::xml_text(
+          xml2::xml_find_all(node, sprintf(".//c:AnnotationText[@xml:lang='%s']", lang))
+          )
+      } else {
+        source_institutions <- xml2::xml_text(
+          xml2::xml_find_all(node, ".//c:AnnotationText[@xml:lang='en']")
+          )
       }
-
+    }
+    
+    if (grepl("adms:Identifier", title)) {
+      title_xml <- xml2::read_xml(title)
+      doi_url <- xml2::xml_attr(xml2::xml_find_first(title_xml, ".//adms:Identifier"), "rdf:about", xml2::xml_ns(title_xml))
     }
   }
 
-  # Extract DOI URL if the annotation contains adms:Identifier
-  if (grepl("adms:Identifier", title)) {
-    title_xml <- xml2::read_xml(title)
-    doi_url <- xml2::xml_attr(xml2::xml_find_first(title_xml, ".//adms:Identifier"), "rdf:about", xml2::xml_ns(title_xml))
-  }
+  # # Extract DOI URL if the annotation contains adms:Identifier
+  # if (grepl("adms:Identifier", title)) {
+  #   title_xml <- xml2::read_xml(title)
+  #   doi_url <- xml2::xml_attr(xml2::xml_find_first(title_xml, ".//adms:Identifier"), "rdf:about", xml2::xml_ns(title_xml))
+  # }
 
 
   metadata <- list(
-    Name_EN = name_en,
-    Name_DE = name_de,
-    Name_FR = name_fr,
-    DOI_URL = ifelse(exists("doi_url"), eval(doi_url), NA_character_),
-    DataflowID = dataflow_id,
-    AgencyID = agencyID,
-    ID = header_id,
-    Prepared = prepared,
-    SenderID = sender_id,
-    OldestPeriodTimestamp = oldest_period_timestamp,
-    LatestPeriodTimestamp = latest_period_timestamp,
-    UpdateDataTimestamp = update_data_timestamp,
-    SourceInstitutions = source_institutions,
-    URN = urn,
-    Version = version,
-    IsFinal = isFinal
+    name = name,
+    name_en = name_en,
+    name_de = name_de,
+    name_fr = name_fr,
+    doi_url = ifelse(exists("doi_url"), eval(doi_url), NA_character_),
+    dataflow_id = dataflow_id,
+    agency_id = agencyID,
+    id = header_id,
+    prepared = prepared,
+    sender_id = sender_id,
+    oldest_period_timestamp = oldest_period_timestamp,
+    latest_period_timestamp = latest_period_timestamp,
+    update_data_timestamp = update_data_timestamp,
+    source_institutions = source_institutions,
+    urn = urn,
+    version = version,
+    is_final = isFinal
   )
 
   return(metadata)
@@ -468,4 +648,85 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en", verbose = TRUE) {
     }
   }
   x
+}
+
+#' @title Create OM compliant datasets
+#' @importFrom dataset dublincore dataset_df
+#' @examples
+#' enriched_dataset <- om_dataset("nama_10_gdp", lang = "de")
+#'   
+om_dataset <- function(id, agency = "eurostat", lang = "en") {
+  lang <- check_lang(lang)
+  
+  df <- get_eurostat_sdmx(id = id, lang = lang, agency = agency, legacy.data.output = FALSE, verbose = FALSE)
+  
+  dataflow <- eurostat:::get_sdmx_dataflow(id = id, agency = agency, type = "list", lang = lang)
+  
+  colnames <- names(df)
+  
+  if ("geo" %in% colnames) {
+    geo_dict <- get_sdmx_codelist("geo", lang = lang)
+    geo_names <- unique(geo_dict$name[geo_dict$id %in% df$geo])
+    if (length(geo_names) > 40) {
+      coverage = "Europe"
+    } else {
+      coverage = paste(unique(geo_names), collapse = ", ")
+    }
+  } else {
+    coverage = "Europe"
+  }
+  
+  concept_scheme <- eurostat:::get_sdmx_conceptscheme(id = id, agency = agency, lang = lang)
+  
+  dsd <- get_sdmx_dsd(id = id, agency = agency, lang = lang)
+  
+  bibentry <- dataset::dublincore(
+    title = dataflow$name,
+    creator = person(given = dataflow$source_institutions, role = "cre"),
+    publisher = dataflow$source_institutions, # I think the publisher is Eurostat... or maybe European Commission?
+    datasource = dataflow$doi_url,
+    rights = "Creative Commons Attribution 4.0 International", # could be shortened to CC-BY 4.0
+    coverage = coverage,
+    language = lang)
+  
+  df_with_metadata <- add_metadata(df, concept_scheme = concept_scheme, dsd = dsd)
+  
+  dataset_enriched <- dataset::dataset_df(df_with_metadata, 
+                                          dataset_bibentry = bibentry)
+  
+  return(dataset_enriched)
+}
+
+
+add_metadata <- function(df, concept_scheme, 
+                         dsd) {
+  
+  # Check required columns in concept_scheme
+  if (!all(c("id", "name") %in% names(concept_scheme))) {
+    stop("concept_scheme must contain 'id' and 'name' columns.")
+  }
+  
+  # Make sure we can iterate over the names
+  df_out <- df
+  
+  for (var in names(df)) {
+    if (var %in% concept_scheme$id) {
+      
+      label <- concept_scheme$name[concept_scheme$id == var]
+      
+      # Construct metadata URIs
+      concept_uri <- concept_scheme$urn[concept_scheme$id == var]
+      namespace <- dsd$urn[dsd$id == var]
+      
+      # Apply defined() dynamically
+      df_out[[var]] <- dataset::defined(
+        df[[var]],
+        label = label,
+        concept = concept_uri,
+        namespace = namespace
+      )
+    }
+  }
+  
+  return(df_out)
 }
