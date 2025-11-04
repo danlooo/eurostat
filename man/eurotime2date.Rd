@@ -14,11 +14,11 @@ the first date of the period (month, quarter or year). If \code{TRUE}
 the date is the last date of the period.}
 }
 \value{
-an object of class \code{\link[=Date]{Date()}}.
+an object of class \code{\link[lubridate:date_utils]{lubridate::Date()}}.
 }
 \description{
 Date conversion from Eurostat time format. A function to
-convert Eurostat time values to objects of class \code{\link[=Date]{Date()}}
+convert Eurostat time values to objects of class \code{\link[lubridate:date_utils]{lubridate::Date()}}
 representing calendar dates.
 }
 \details{
@@ -26,7 +26,7 @@ Available patterns are YYYY (year), YYYY-SN (semester), YYYY-QN (quarter),
 YYYY-MM (month), YYYY-WNN (week) and YYYY-MM-DD (day).
 }
 \examples{
-\dontshow{if (check_access_to_data()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (check_access_to_data()) withAutoprint(\{ # examplesIf}
 \donttest{
 na_q <- get_eurostat("namq_10_pc", time_format = "raw")
 na_q$TIME_PERIOD <- eurotime2date(x = na_q$TIME_PERIOD)
@@ -59,7 +59,7 @@ See \code{citation("eurostat")}:
 #   Kantanen P (2025). "eurostat: Tools for Eurostat Open Data."
 #   doi:10.32614/CRAN.package.eurostat
 #   <https://doi.org/10.32614/CRAN.package.eurostat>, R package version
-#   4.1.0.9004, <https://github.com/rOpenGov/eurostat>.
+#   4.1.0.9005, <https://github.com/rOpenGov/eurostat>.
 # 
 # To see these entries in BibTeX format, use 'print(<citation>,
 # bibtex=TRUE)', 'toBibtex(.)', or set

@@ -24,7 +24,7 @@ human-readable labels. To translate codes to labels, use
 \code{\link[=label_eurostat]{label_eurostat()}}.
 }
 \examples{
-\dontshow{if (check_access_to_data()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (check_access_to_data()) withAutoprint(\{ # examplesIf}
 \donttest{
 get_eurostat_dic("crop_pro")
 
@@ -49,7 +49,7 @@ See \code{citation("eurostat")}:
 #   Kantanen P (2025). "eurostat: Tools for Eurostat Open Data."
 #   doi:10.32614/CRAN.package.eurostat
 #   <https://doi.org/10.32614/CRAN.package.eurostat>, R package version
-#   4.1.0.9004, <https://github.com/rOpenGov/eurostat>.
+#   4.1.0.9005, <https://github.com/rOpenGov/eurostat>.
 # 
 # To see these entries in BibTeX format, use 'print(<citation>,
 # bibtex=TRUE)', 'toBibtex(.)', or set

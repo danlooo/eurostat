@@ -1,3 +1,9 @@
+# eurostat 4.1.0.9005
+
+## Deprecated and defunct
+
+* Removed RefManageR dependency from the package due to it being unmaintained
+
 # eurostat 4.1.0.9004
 
 ## Major updates

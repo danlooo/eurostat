@@ -15,9 +15,9 @@ tidy_eurostat_sdmx_csv(
 \item{dat}{a data_frame from \code{\link[=get_eurostat_raw]{get_eurostat_raw()}}.}
 
 \item{time_format}{a string giving a type of the conversion of the time column from the
-eurostat format. The default argument "\code{date}" converts to a \code{\link[=Date]{Date()}} class
+eurostat format. The default argument "\code{date}" converts to a \code{\link[lubridate:date_utils]{lubridate::Date()}} class
 with the date being the first day of the period. A "\code{date_last}" argument
-converts the dataset date to a \code{\link[=Date]{Date()}} class object with the difference
+converts the dataset date to a \code{\link[lubridate:date_utils]{lubridate::Date()}} class object with the difference
 that the exact date is the last date of the period. Period can be year,
 semester (half year), quarter, month, or week (See \code{\link[=eurotime2date]{eurotime2date()}} for
 more information).
@@ -71,7 +71,7 @@ used:
   Kantanen P (2025). "eurostat: Tools for Eurostat Open Data."
   doi:10.32614/CRAN.package.eurostat
   <https://doi.org/10.32614/CRAN.package.eurostat>, R package version
-  4.1.0.9004, <https://github.com/rOpenGov/eurostat>.
+  4.1.0.9005, <https://github.com/rOpenGov/eurostat>.
 
 To see these entries in BibTeX format, use 'print(<citation>,
 bibtex=TRUE)', 'toBibtex(.)', or set
