@@ -13,12 +13,14 @@
 #' what is the best way to interact with SDMX APIs.
 #'
 #' @inheritParams get_eurostat
-#' @inheritParams get_eurostat_async
 #' @param agency Either "Eurostat" (default), "Eurostat_comext"
 #' (for Comext and Prodcom datasets), "COMP", "EMPL" or "GROW"
 #' @param use.data.table Use data.table to process files? Default is FALSE.
 #' If data.table is used, data will be downloaded as a TSV file and
 #' processed using [tidy_eurostat()]
+#' @param wait Integer. Seconds between status checks. Default is 1 second.
+#' @param max_wait Integer. Max time to wait in seconds. Default is 60 seconds.
+#' @param compressed Logical. Download data in compressed format? Default is TRUE.
 #'
 #' @importFrom curl curl_download
 #' @importFrom utils download.file
@@ -131,7 +133,7 @@ get_eurostat_sdmx <- function(
 }
 
 get_sdmx_codelist <- function(codelist_id, agency = "Eurostat", type = "list", lang = NULL) {
-  lang <- eurostat:::check_lang(lang)
+  lang <- check_lang(lang)
   
   api_base_uri <- build_api_base_uri(agency)
   
@@ -170,7 +172,7 @@ get_sdmx_codelist <- function(codelist_id, agency = "Eurostat", type = "list", l
 
 get_sdmx_conceptscheme <- function(id, agency = "Eurostat", type = "list", lang = NULL) {
   
-  lang <- eurostat:::check_lang(lang)
+  lang <- check_lang(lang)
   
   api_base_uri <- build_api_base_uri(agency)
   
@@ -223,6 +225,7 @@ get_sdmx_conceptscheme <- function(id, agency = "Eurostat", type = "list", lang 
   return(metadata_returnable)
 }
 
+#' @importFrom xml2 xml_ns xml_find_first xml_text xml_attr xml_find_all 
 get_sdmx_dsd <- function(id, agency = "Eurostat", type = "list", lang = NULL) {
   api_base_uri <- build_api_base_uri(agency)
   
@@ -648,85 +651,4 @@ label_eurostat_sdmx <- function(x, agency, id, lang = "en", verbose = TRUE) {
     }
   }
   x
-}
-
-#' @title Create OM compliant datasets
-#' @importFrom dataset dublincore dataset_df
-#' @examples
-#' enriched_dataset <- om_dataset("nama_10_gdp", lang = "de")
-#'   
-om_dataset <- function(id, agency = "eurostat", lang = "en") {
-  lang <- check_lang(lang)
-  
-  df <- get_eurostat_sdmx(id = id, lang = lang, agency = agency, legacy.data.output = FALSE, verbose = FALSE)
-  
-  dataflow <- eurostat:::get_sdmx_dataflow(id = id, agency = agency, type = "list", lang = lang)
-  
-  colnames <- names(df)
-  
-  if ("geo" %in% colnames) {
-    geo_dict <- get_sdmx_codelist("geo", lang = lang)
-    geo_names <- unique(geo_dict$name[geo_dict$id %in% df$geo])
-    if (length(geo_names) > 40) {
-      coverage = "Europe"
-    } else {
-      coverage = paste(unique(geo_names), collapse = ", ")
-    }
-  } else {
-    coverage = "Europe"
-  }
-  
-  concept_scheme <- eurostat:::get_sdmx_conceptscheme(id = id, agency = agency, lang = lang)
-  
-  dsd <- get_sdmx_dsd(id = id, agency = agency, lang = lang)
-  
-  bibentry <- dataset::dublincore(
-    title = dataflow$name,
-    creator = person(given = dataflow$source_institutions, role = "cre"),
-    publisher = dataflow$source_institutions, # I think the publisher is Eurostat... or maybe European Commission?
-    datasource = dataflow$doi_url,
-    rights = "Creative Commons Attribution 4.0 International", # could be shortened to CC-BY 4.0
-    coverage = coverage,
-    language = lang)
-  
-  df_with_metadata <- add_metadata(df, concept_scheme = concept_scheme, dsd = dsd)
-  
-  dataset_enriched <- dataset::dataset_df(df_with_metadata, 
-                                          dataset_bibentry = bibentry)
-  
-  return(dataset_enriched)
-}
-
-
-add_metadata <- function(df, concept_scheme, 
-                         dsd) {
-  
-  # Check required columns in concept_scheme
-  if (!all(c("id", "name") %in% names(concept_scheme))) {
-    stop("concept_scheme must contain 'id' and 'name' columns.")
-  }
-  
-  # Make sure we can iterate over the names
-  df_out <- df
-  
-  for (var in names(df)) {
-    if (var %in% concept_scheme$id) {
-      
-      label <- concept_scheme$name[concept_scheme$id == var]
-      
-      # Construct metadata URIs
-      concept_uri <- concept_scheme$urn[concept_scheme$id == var]
-      namespace <- dsd$urn[dsd$id == var]
-      
-      # Apply defined() dynamically
-      df_out[[var]] <- dataset::defined(
-        df[[var]],
-        label = label,
-        concept = concept_uri,
-        namespace = namespace
-      )
-    }
-  }
-  
-  return(df_out)
 }

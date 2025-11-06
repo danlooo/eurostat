@@ -1,3 +1,9 @@
+# eurostat 4.1.0.9006
+
+## Minor updates
+
+* Removed experimental functions from the codebase, fixed tests that were pointing at datasets renamed by Eurostat
+
 # eurostat 4.1.0.9005
 
 ## Deprecated and defunct

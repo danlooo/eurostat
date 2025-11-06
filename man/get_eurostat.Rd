@@ -343,7 +343,7 @@ options(eurostat_update = FALSE)
 set_eurostat_cache_dir(file.path(tempdir(), "r_cache2"))
 k <- get_eurostat("nama_10_lp_ulc")
 k <- get_eurostat("nama_10_lp_ulc", cache = FALSE)
-k <- get_eurostat("avia_gonc", select_time = "Y", cache = FALSE)
+k <- get_eurostat("avia_gooc", select_time = "Y", cache = FALSE)
 
 dd <- get_eurostat("nama_10_gdp",
   filters = list(
@@ -390,7 +390,7 @@ used:
   Kantanen P (2025). "eurostat: Tools for Eurostat Open Data."
   doi:10.32614/CRAN.package.eurostat
   <https://doi.org/10.32614/CRAN.package.eurostat>, R package version
-  4.1.0.9005, <https://github.com/rOpenGov/eurostat>.
+  4.1.0.9006, <https://github.com/rOpenGov/eurostat>.
 
 To see these entries in BibTeX format, use 'print(<citation>,
 bibtex=TRUE)', 'toBibtex(.)', or set

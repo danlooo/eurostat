@@ -142,7 +142,7 @@
 #' set_eurostat_cache_dir(file.path(tempdir(), "r_cache2"))
 #' k <- get_eurostat("nama_10_lp_ulc")
 #' k <- get_eurostat("nama_10_lp_ulc", cache = FALSE)
-#' k <- get_eurostat("avia_gonc", select_time = "Y", cache = FALSE)
+#' k <- get_eurostat("avia_gooc", select_time = "Y", cache = FALSE)
 #'
 #' dd <- get_eurostat("nama_10_gdp",
 #'   filters = list(
