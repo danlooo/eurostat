@@ -18,7 +18,7 @@
 #' @param nuts_level Level of NUTS classification of the geospatial data. One of
 #'    "0", "1", "2", "3" or "all" (mimics the original behaviour)
 #' @param year NUTS release year. One of
-#'    "2003", "2006", "2010", "2013", "2016" or "2021"
+#'    "2003", "2006", "2010", "2013", "2016", "2021" or "2024"
 #' @param cache a logical whether to do caching. Default is `TRUE`.
 #' @param update_cache a logical whether to update cache. Can be set also with
 #'        `options(eurostat_update = TRUE)`
