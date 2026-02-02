@@ -42,7 +42,7 @@ been soft-deprecated, the function would switch to \code{sf}.}
 "0", "1", "2", "3" or "all" (mimics the original behaviour)}
 
 \item{year}{NUTS release year. One of
-"2003", "2006", "2010", "2013", "2016" or "2021"}
+"2003", "2006", "2010", "2013", "2016", "2021" or "2024"}
 
 \item{cache}{a logical whether to do caching. Default is \code{TRUE}.}
 
