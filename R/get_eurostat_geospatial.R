@@ -16,6 +16,8 @@
 #'    * "10" (1:10million)
 #'    * "03" (1:3million) or
 #'    * "01" (1:1million).
+#' @param nuts_level Level of NUTS classification of the geospatial data. One of
+#'    "0", "1", "2", "3" or "all" (mimics the original behaviour)
 #' @param crs projection of the map: 4-digit
 #'   [EPSG code](https://spatialreference.org/ref/epsg/). One of:
 #'  * "4326" - WGS84
@@ -107,6 +109,7 @@
 #' @export
 get_eurostat_geospatial <- function(output_class = "sf",
                                     resolution = "60",
+                                    nuts_level = "all",
                                     crs = "4326",
                                     make_valid = "DEPRECATED", ...) {
   # nocov start
@@ -134,6 +137,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
   # ovrewrite default parameters if given
   args <- modifyList(formals(giscoR::gisco_get_nuts), list(...))
   args$resolution <- resolution
+  args$nuts_level <- nuts_level
   args$epsg <- crs
 
   # Sanity check for nuts_level
