@@ -160,17 +160,16 @@ get_eurostat_geospatial <- function(output_class = "sf",
   # relevant parameters
   use_local <- all(
     as.character(args$resolution) == "60",
-    as.character(args$year) == "2016",
+    as.character(args$year) == "2024",
     isFALSE(args$update_cache),
     as.character(crs) == "4326",
-    # Check dots are empty
-    length(args) == 0
+    length(list(...)) == 0
   )
 
   if (use_local) {
     # Not modified - using dataset included with eurostat package
-    message("Extracting data from eurostat::eurostat_geodata_60_2016")
-    shp <- eurostat::eurostat_geodata_60_2016
+    message("Extracting data from eurostat::eurostat_geodata_60_2024")
+    shp <- eurostat::eurostat_geodata_60_2024
     if (args$nuts_level != "all") {
       shp <- shp[shp$LEVL_CODE == args$nuts_level, ]
     }
