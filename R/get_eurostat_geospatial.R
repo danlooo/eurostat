@@ -135,7 +135,8 @@ get_eurostat_geospatial <- function(output_class = "sf",
   output_class <- match.arg(as.character(output_class), c("sf", "df"))
 
   # ovrewrite default parameters if given
-  args <- modifyList(formals(giscoR::gisco_get_nuts), list(...))
+  default_args <- as.list(formals(giscoR::gisco_get_nuts))
+  args <- modifyList(default_args, list(...))
   args$resolution <- resolution
   args$nuts_level <- nuts_level
   args$epsg <- crs
