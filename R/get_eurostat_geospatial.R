@@ -18,13 +18,15 @@
 #'    * "01" (1:1million).
 #' @param nuts_level Level of NUTS classification of the geospatial data. One of
 #'    "0", "1", "2", "3" or "all" (mimics the original behaviour)
+#' @param year NUTS release year. One of
+#'    "2003", "2006", "2010", "2013", "2016", "2021" or "2024"
 #' @param crs projection of the map: 4-digit
 #'   [EPSG code](https://spatialreference.org/ref/epsg/). One of:
 #'  * "4326" - WGS84
 #'  * "3035" - ETRS89 / ETRS-LAEA
 #'  * "3857" - Pseudo-Mercator
 #'
-#' @param make_valid Deprecated
+#' @inheritParams get_eurostat
 #'
 #' @details
 #' The objects downloaded from GISCO should contain all or some of the
@@ -109,12 +111,13 @@
 #' @export
 get_eurostat_geospatial <- function(output_class = "sf",
                                     resolution = "60",
-                                    nuts_level = "all",
-                                    crs = "4326",
-                                    make_valid = "DEPRECATED", ...) {
+                                    nuts_level = "all", year = "2016",
+                                    cache = TRUE, update_cache = FALSE,
+                                    cache_dir = NULL, crs = "4326", 
+                                    verbose = TRUE, ...) {
   # nocov start
   if (!requireNamespace("sf")) {
-    message("'sf' package is required for geospatial functionalities")
+    if (verbose) message("'sf' package is required for geospatial functionalities")
     return(invisible())
   }
   # nocov end
@@ -123,12 +126,8 @@ get_eurostat_geospatial <- function(output_class = "sf",
   # Deprecation messages
   stopifnot(length(output_class) == 1L)
   if (output_class == "spdf") {
-    message("'spdf' output deprecated. Switching to sf output")
+    if (verbose) message("'spdf' output deprecated. Switching to sf output")
     output_class <- "sf"
-  }
-
-  if (!identical(make_valid, "DEPRECATED")) {
-    message("'make_valid' argument has been deprecated")
   }
 
   # Leaving only specific validations - rest of call would be handled by giscoR
@@ -182,7 +181,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
     }
     # nocov end
 
-    message(paste0(
+    if (verbose) message(paste0(
       "Extracting data using giscoR package, please report issues",
       " on https://github.com/rOpenGov/giscoR/issues"
     ))
@@ -198,7 +197,7 @@ get_eurostat_geospatial <- function(output_class = "sf",
       file.path(tempdir(), "eurostat")
     )) {
       # eurostat not set, using default giscoR cache management
-      message("Cache management as per giscoR. see 'giscoR::gisco_get_nuts()'")
+      if (verbose) message("Cache management as per giscoR. see 'giscoR::gisco_get_nuts()'")
     } else {
       args$cache_dir <- eur_helper_cachedir(args$cache_dir)
     }
