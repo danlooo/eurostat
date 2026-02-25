@@ -9,6 +9,7 @@
 #' @param output_class Class of object returned,
 #'   either `sf` `simple features` or `df` (`data_frame`). `spdf` output has
 #'   been soft-deprecated, the function would switch to `sf`.
+#' @inheritParams giscoR::gisco_get_nuts
 #' @param resolution Resolution of the geospatial data. One of
 #'    * "60" (1:60million),
 #'    * "20" (1:20million)
@@ -26,8 +27,6 @@
 #'  * "3857" - Pseudo-Mercator
 #'
 #' @inheritParams get_eurostat
-#'
-#' @inheritDotParams giscoR::gisco_get_nuts -epsg
 #'
 #' @details
 #' The objects downloaded from GISCO should contain all or some of the
@@ -134,41 +133,44 @@ get_eurostat_geospatial <- function(output_class = "sf",
   # Leaving only specific validations - rest of call would be handled by giscoR
   output_class <- match.arg(as.character(output_class), c("sf", "df"))
 
+  # ovrewrite default parameters if given
+  default_args <- as.list(formals(giscoR::gisco_get_nuts))
+  args <- modifyList(default_args, list(...))
+  args$resolution <- resolution
+  args$nuts_level <- nuts_level
+  args$epsg <- crs
+
   # Sanity check for nuts_level
-  stopifnot(length(nuts_level) == 1L)
-  nuts_level <- regmatches(nuts_level, regexpr("^(all|[0-9]+)", nuts_level))
-  nuts_level <- match.arg(nuts_level, c("all", 0:3))
+  stopifnot(length(args$nuts_level) == 1L)
+  args$nuts_level <- regmatches(args$nuts_level, regexpr("^(all|[0-9]+)", args$nuts_level))
+  args$nuts_level <- match.arg(args$nuts_level, c("all", 0:3))
 
   # Performance - If df requested resolution and crs are meaningless. Switching
   # to 60 and 4326 for speed (except for 2003, no available)
   if (output_class == "df") {
-    resolution <- "60"
-    crs <- "4326"
+    args$resolution <- "60"
+    args$epsg <- "4326"
 
-    if (as.integer(year) == 2003) resolution <- "20"
+    if (as.integer(args$year) == 2003) args$resolution <- "20"
   }
 
-
-  # If cache file requested get the info from the internal dataset
-  capture_dots <- list(...)
 
   # Check if the pre-set call to the function has been modified on
   # relevant parameters
   use_local <- all(
-    as.character(resolution) == "60",
-    as.character(year) == "2016",
-    isFALSE(update_cache),
+    as.character(args$resolution) == "60",
+    as.character(args$year) == "2024",
+    isFALSE(args$update_cache),
     as.character(crs) == "4326",
-    # Check dots are empty
-    length(capture_dots) == 0
+    length(list(...)) == 0
   )
 
   if (use_local) {
     # Not modified - using dataset included with eurostat package
-    message("Extracting data from eurostat::eurostat_geodata_60_2016")
-    shp <- eurostat::eurostat_geodata_60_2016
-    if (nuts_level != "all") {
-      shp <- shp[shp$LEVL_CODE == nuts_level, ]
+    message("Extracting data from eurostat::eurostat_geodata_60_2024")
+    shp <- eurostat::eurostat_geodata_60_2024
+    if (args$nuts_level != "all") {
+      shp <- shp[shp$LEVL_CODE == args$nuts_level, ]
     }
   } else {
     # Check if package "giscoR" is installed
@@ -187,9 +189,9 @@ get_eurostat_geospatial <- function(output_class = "sf",
     # Manage cache: Priority is eurostat cache (if set)
     # If not make use of giscoR default options
     detect_eurostat_cache <- eur_helper_detect_cache_dir()
-    if (!is.null(cache_dir)) {
+    if (!is.null(args$cache_dir)) {
       # Already set by the user, no need message
-      cache_dir <- eur_helper_cachedir(cache_dir)
+      args$cache_dir <- eur_helper_cachedir(args$cache_dir)
     } else if (identical(
       detect_eurostat_cache,
       file.path(tempdir(), "eurostat")
@@ -197,18 +199,12 @@ get_eurostat_geospatial <- function(output_class = "sf",
       # eurostat not set, using default giscoR cache management
       if (verbose) message("Cache management as per giscoR. see 'giscoR::gisco_get_nuts()'")
     } else {
-      cache_dir <- eur_helper_cachedir(cache_dir)
+      args$cache_dir <- eur_helper_cachedir(args$cache_dir)
     }
 
     # giscoR call with parameters
     # on input errors giscoR would show warnings, etc
-    shp <- giscoR::gisco_get_nuts(
-      resolution = resolution,
-      nuts_level = nuts_level, year = year,
-      cache = cache, update_cache = update_cache,
-      cache_dir = cache_dir, epsg = crs,
-      ...
-    )
+    shp <- do.call(giscoR::gisco_get_nuts, args)
   }
 
   # Just to capture potential NULL outputs from giscoR - this can happen
