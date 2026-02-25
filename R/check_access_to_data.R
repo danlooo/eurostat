@@ -1,4 +1,4 @@
-#' @title Check access to ec.europe.eu
+#' @title Check access to ec.europa.eu
 #' @description Check if R has access to resources at http://ec.europa.eu
 #' @author Markus Kainu <markus.kainu@@kapsi.fi>
 #' @return a logical.

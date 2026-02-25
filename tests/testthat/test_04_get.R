@@ -22,7 +22,8 @@ test_that("get_eurostat (dissemination API) produces a message with multiple sel
   skip_on_cran()
   skip_if_offline()
   expect_message(get_eurostat(id = "avia_gooc",
-                              select_time = c("A", "M", "Q")))
+                              select_time = c("A", "M", "Q"),
+                              filters = list(TIME_PERIOD = 2001)))
 })
 
 test_that("get_eurostat (dissemination API) produces an error with imaginary select_time parameters", {

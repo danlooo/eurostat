@@ -20,7 +20,7 @@ get_eurostat_geospatial(
   update_cache = FALSE,
   cache_dir = NULL,
   crs = "4326",
-  make_valid = "DEPRECATED",
+  verbose = TRUE,
   ...
 )
 }
@@ -42,16 +42,18 @@ been soft-deprecated, the function would switch to \code{sf}.}
 "0", "1", "2", "3" or "all" (mimics the original behaviour)}
 
 \item{year}{NUTS release year. One of
-"2003", "2006", "2010", "2013", "2016" or "2021"}
+"2003", "2006", "2010", "2013", "2016", "2021" or "2024"}
 
 \item{cache}{a logical whether to do caching. Default is \code{TRUE}.}
 
 \item{update_cache}{a logical whether to update cache. Can be set also with
 \code{options(eurostat_update = TRUE)}}
 
-\item{cache_dir}{a path to a cache directory. See
-\code{\link[=set_eurostat_cache_dir]{set_eurostat_cache_dir()}}. If \code{NULL} and the cache dir has not been set
-globally the file would be stored in the \code{\link[=tempdir]{tempdir()}}.}
+\item{cache_dir}{a path to a cache directory. \code{NULL} (default) uses and creates
+'eurostat' directory in the temporary directory defined by base R
+\code{\link[=tempdir]{tempdir()}} function. The user can set the cache directory to an existing
+directory by using this argument. The cache directory can also be set with
+\code{\link[=set_eurostat_cache_dir]{set_eurostat_cache_dir()}} function.}
 
 \item{crs}{projection of the map: 4-digit
 \href{https://spatialreference.org/ref/epsg/}{EPSG code}. One of:
@@ -61,22 +63,23 @@ globally the file would be stored in the \code{\link[=tempdir]{tempdir()}}.}
 \item "3857" - Pseudo-Mercator
 }}
 
-\item{make_valid}{Deprecated}
+\item{verbose}{Output messages when downloading data. Default is \code{TRUE}.}
 
 \item{...}{
   Arguments passed on to \code{\link[giscoR:gisco_get_nuts]{giscoR::gisco_get_nuts}}
   \describe{
-    \item{\code{verbose}}{Logical, displays information. Useful for debugging,
-default is \code{FALSE}.}
     \item{\code{spatialtype}}{Type of geometry to be returned:
 \itemize{
-\item \strong{"BN"}: Boundaries - \code{LINESTRING} object.
-\item \strong{"LB"}: Labels - \code{POINT} object.
-\item \strong{"RG"}: Regions - \code{MULTIPOLYGON/POLYGON} object.
-}}
+\item \code{"BN"}: Boundaries - \code{LINESTRING} object.
+\item \code{"LB"}: Labels - \code{POINT} object.
+\item \code{"RG"}: Regions - \code{MULTIPOLYGON/POLYGON} object.
+}
+
+\strong{Note that} parameters \code{country}, \code{nuts_level} and \code{nuts_id} would be only
+applied when \code{spatialtype} is \code{"BN"} or \code{"RG"}.}
     \item{\code{country}}{Optional. A character vector of country codes. It could be
 either a vector of country names, a vector of ISO3 country codes or a
-vector of Eurostat country codes. Mixed types (as \code{c("Turkey","US","FRA")})
+vector of Eurostat country codes. Mixed types (as \code{c("Italy","ES","FRA")})
 would not work. See also \code{\link[countrycode:countrycode]{countrycode::countrycode()}}.}
     \item{\code{nuts_id}}{Optional. A character vector of NUTS IDs.}
   }}
